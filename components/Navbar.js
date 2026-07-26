@@ -34,6 +34,9 @@ export default function Navbar() {
           <span className="whitespace-nowrap">Oshogbo<span className="text-gold-500">Market</span></span>
         </Link>
         <nav className="flex items-center gap-3 text-sm font-body shrink-0">
+          <Link href="/messages" className="hover:text-gold-400 whitespace-nowrap">
+            Messages
+          </Link>
           <Link href="/listings/new" className="hover:text-gold-400 whitespace-nowrap">
             <span className="hidden sm:inline">Sell / Post request</span>
             <span className="sm:hidden">+ Sell</span>

@@ -9,6 +9,8 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -16,10 +18,22 @@ export default function AuthPage() {
   async function handleSignUp() {
     setLoading(true);
     setErrorMsg("");
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
     if (error) {
       setErrorMsg(error.message);
+      return;
+    }
+    setAwaitingVerification(true);
+  }
+
+  async function handleVerifySignup() {
+    setLoading(true);
+    setErrorMsg("");
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: verifyCode, type: "signup" });
+    if (error) {
       setLoading(false);
+      setErrorMsg(error.message);
       return;
     }
     if (data.user) {
@@ -34,8 +48,15 @@ export default function AuthPage() {
     setErrorMsg("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setErrorMsg("Incorrect email or password.");
       setLoading(false);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) {
+        setErrorMsg("Please verify your email first - check your inbox for the code.");
+      } else if (msg.includes("invalid login credentials")) {
+        setErrorMsg("Incorrect email or password. Please try again.");
+      } else {
+        setErrorMsg(error.message);
+      }
       return;
     }
     setLoading(false);
@@ -67,6 +88,22 @@ export default function AuthPage() {
         <button onClick={() => setMode("login")} className="w-full bg-white border border-indigo-950/20 text-indigo-950 font-semibold rounded px-3 py-3">
           I already have an account - Log in
         </button>
+      </div>
+    );
+  }
+
+  if (mode === "signup" && awaitingVerification) {
+    return (
+      <div className="max-w-sm mx-auto mt-8">
+        <h1 className="font-display font-bold text-xl text-indigo-950 mb-4">Verify your email</h1>
+        <p className="text-sm text-indigo-950/60 mb-3">We sent a 6-digit code to {email}. Check spam too.</p>
+        {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
+        <div className="space-y-3">
+          <input type="text" placeholder="6-digit code" value={verifyCode} onChange={(e) => setVerifyCode(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+          <button onClick={handleVerifySignup} disabled={loading || !verifyCode} className="w-full bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 disabled:opacity-50">
+            {loading ? "Verifying..." : "Verify and continue"}
+          </button>
+        </div>
       </div>
     );
   }
