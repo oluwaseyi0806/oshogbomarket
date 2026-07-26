@@ -102,9 +102,9 @@ export default function ListingDetailPage() {
         {isRequest ? "Budget: NGN " + listing.price?.toLocaleString() : "NGN " + listing.price?.toLocaleString()}
       </p>
       <p className="text-sm text-indigo-950/50 mt-1">{listing.location_area} - {listing.category}</p>
-      {seller && (
+     {seller && (
         <p className="text-sm text-indigo-950/50 mt-1">
-          Posted by {seller.name} - Member since {new Date(seller.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
+          Posted by <a href={"/seller/" + listing.user_id} className="underline text-indigo-900">{seller.name}</a> - Member since {new Date(seller.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
         </p>
       )}
       <p className="mt-4 text-indigo-950/80 whitespace-pre-wrap">{listing.description}</p>

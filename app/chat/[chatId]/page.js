@@ -63,13 +63,31 @@ export default function ChatPage() {
     await supabase.from("messages").insert({ chat_id: chatId, sender_id: userId, text: text.trim() });
 
     const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
-    const { data: recipient } = await supabase.from("users").select("onesignal_player_id").eq("id", recipientId).single();
+    const { data: recipient } = await supabase.from("users").select("onesignal_player_id, email").eq("id", recipientId).single();
+    const { data: listingData } = await supabase.from("listings").select("title").eq("id", chatInfo.listing_id).single();
 
     if (recipient?.onesignal_player_id) {
       fetch("/api/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerId: recipient.onesignal_player_id, title: "New message on OshogboMarket", message: text.trim() }),
+        body: JSON.stringify({
+          playerId: recipient.onesignal_player_id,
+          title: "New message on OshogboMarket",
+          message: text.trim(),
+        }),
+      });
+    }
+
+    if (recipient?.email) {
+      fetch("/api/notify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toEmail: recipient.email,
+          listingTitle: listingData?.title || "a listing",
+          messageText: text.trim(),
+          chatUrl: window.location.origin + "/chat/" + chatId,
+        }),
       });
     }
 

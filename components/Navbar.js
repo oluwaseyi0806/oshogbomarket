@@ -37,6 +37,7 @@ export default function Navbar() {
           <Link href="/messages" className="hover:text-gold-400 whitespace-nowrap">
             Messages
           </Link>
+          <Link href="/messages" className="hover:text-gold-400 whitespace-nowrap">Messages</Link>
           <Link href="/listings/new" className="hover:text-gold-400 whitespace-nowrap">
             <span className="hidden sm:inline">Sell / Post request</span>
             <span className="sm:hidden">+ Sell</span>

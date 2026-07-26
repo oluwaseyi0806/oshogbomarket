@@ -37,7 +37,7 @@ export default function AuthPage() {
       return;
     }
     if (data.user) {
-      await supabase.from("users").upsert({ id: data.user.id, name: name || "Osogbo user" });
+     await supabase.from("users").upsert({ id: data.user.id, name: name || "Osogbo user", email: email });
     }
     setLoading(false);
     router.push("/");
