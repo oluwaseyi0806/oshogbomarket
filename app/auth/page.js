@@ -1,46 +1,4 @@
 ﻿"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabaseClient";
-
-export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-
-  useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(function (event) {
-      if (event === "PASSWORD_RECOVERY") {
-        setReady(true);
-      }
-    });
-    supabase.auth.getSession().then(function (result) {
-      if (result.data.session) setReady(true);
-    });
-    return function () { listener.subscription.unsubscribe(); };
-  }, []);
-
-  async function handleUpdatePassword() {
-    setLoading(true);
-    setErrorMsg("");
-    const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (error) {
-      setErrorMsg(error.message);
-      return;
-    }
-    setSuccessMsg("Password updated. Redirecting to login...");
-    setTimeout(function () { router.push("/"); }, 1500);
-  }
-
-  if (!ready) {
-    return <p className="text-sm text-indigo-950/50
-
-@'
-"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
