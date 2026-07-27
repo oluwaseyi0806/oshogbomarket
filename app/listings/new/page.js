@@ -17,6 +17,7 @@ export default function NewListingPage() {
   const [condition, setCondition] = useState("Used");
   const [negotiable, setNegotiable] = useState(false);
   const [files, setFiles] = useState([]);
+  const [videoFile, setVideoFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -35,6 +36,17 @@ export default function NewListingPage() {
     if (digits.startsWith("0")) return "234" + digits.slice(1);
     if (digits.startsWith("234")) return digits;
     return digits;
+  }
+
+  function handleVideoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      setErrorMsg("Video must be under 50MB. Try a shorter clip.");
+      return;
+    }
+    setErrorMsg("");
+    setVideoFile(file);
   }
 
   async function handleSubmit(e) {
@@ -91,6 +103,16 @@ export default function NewListingPage() {
       }
     }
 
+    let videoUrl = null;
+    if (videoFile) {
+      const videoPath = userData.user.id + "/" + Date.now() + "-" + videoFile.name;
+      const { error: videoError } = await supabase.storage.from("listing-videos").upload(videoPath, videoFile);
+      if (!videoError) {
+        const { data: videoPublicUrl } = supabase.storage.from("listing-videos").getPublicUrl(videoPath);
+        videoUrl = videoPublicUrl.publicUrl;
+      }
+    }
+
     await supabase.from("users").update({ whatsapp_number: normalizedWhatsapp }).eq("id", userData.user.id);
 
     const { error } = await supabase.from("listings").insert({
@@ -102,6 +124,7 @@ export default function NewListingPage() {
       category,
       location_area: area,
       images: imageUrls,
+      video_url: videoUrl,
       whatsapp_number: normalizedWhatsapp,
       condition: condition,
       negotiable: negotiable,
@@ -163,6 +186,11 @@ export default function NewListingPage() {
         <div>
           <label className="block text-sm text-indigo-950/70 mb-1">Photos {type === "buy_request" && "(optional)"}</label>
           <input type="file" accept="image/*" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="w-full text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm text-indigo-950/70 mb-1">Video (optional, max 50MB)</label>
+          <input type="file" accept="video/*" onChange={handleVideoChange} className="w-full text-sm" />
+          {videoFile && <p className="text-xs text-indigo-950/50 mt-1">{videoFile.name} selected</p>}
         </div>
         <button type="submit" disabled={loading} className="w-full bg-indigo-950 text-parchment font-semibold rounded px-3 py-2 disabled:opacity-50">
           {loading ? "Posting..." : "Post it"}

@@ -105,6 +105,11 @@ export default function ListingDetailPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {listing.video_url && (
+        <div className="mb-4">
+          <video controls className="w-full rounded-lg bg-black" src={listing.video_url} />
+        </div>
+      )}
       {listing.images?.length ? (
         <div className="mb-4">
           <div className="relative aspect-square bg-indigo-950/5 rounded-lg overflow-hidden">
