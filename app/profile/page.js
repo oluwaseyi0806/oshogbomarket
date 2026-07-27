@@ -10,6 +10,8 @@ export default function ProfilePage() {
   const [myListings, setMyListings] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     load();
@@ -21,6 +23,7 @@ export default function ProfilePage() {
       router.push("/auth");
       return;
     }
+    setUserId(userData.user.id);
 
     const { data: profileData } = await supabase.from("users").select("*").eq("id", userData.user.id).single();
     setProfile(profileData);
@@ -29,9 +32,25 @@ export default function ProfilePage() {
     setMyListings(listingsData || []);
 
     const { data: favData } = await supabase.from("favorites").select("listings(*)").eq("user_id", userData.user.id);
-    setFavorites((favData || []).map((f) => f.listings).filter(Boolean));
+    setFavorites((favData || []).map(function (f) { return f.listings; }).filter(Boolean));
 
     setLoading(false);
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files[0];
+    if (!file || !userId) return;
+    setUploading(true);
+
+    const filePath = userId + "/avatar-" + Date.now() + "-" + file.name;
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
+
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      await supabase.from("users").update({ avatar_url: publicUrlData.publicUrl }).eq("id", userId);
+      setProfile(function (prev) { return Object.assign({}, prev, { avatar_url: publicUrlData.publicUrl }); });
+    }
+    setUploading(false);
   }
 
   async function markSold(id) {
@@ -54,13 +73,30 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display font-bold text-xl text-indigo-950">{profile?.name}</h1>
-          <p className="text-sm text-indigo-950/50">
-            Member since {new Date(profile?.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="relative w-20 h-20 rounded-full bg-indigo-950/10 overflow-hidden shrink-0">
+            {profile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center font-display font-bold text-2xl text-indigo-950">
+                {profile?.name ? profile.name.charAt(0).toUpperCase() : "?"}
+              </div>
+            )}
+            <label className="absolute bottom-0 right-0 bg-gold-500 text-indigo-950 text-[10px] font-bold rounded-full w-6 h-6 flex items-center justify-center cursor-pointer">
+              {uploading ? "..." : "+"}
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+            </label>
+          </div>
+          <div>
+            <h1 className="font-display font-bold text-xl text-indigo-950">{profile?.name}</h1>
+            <p className="text-sm text-indigo-950/50">{profile?.email}</p>
+            <p className="text-xs text-indigo-950/40">
+              Member since {new Date(profile?.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
+            </p>
+          </div>
         </div>
-        <button onClick={logout} className="text-sm text-indigo-950/60 underline">Log out</button>
+        <button onClick={logout} className="text-sm text-indigo-950/60 underline shrink-0">Log out</button>
       </div>
 
       <h2 className="font-display font-bold text-indigo-950 mb-2">My listings</h2>
@@ -68,17 +104,19 @@ export default function ProfilePage() {
         <p className="text-sm text-indigo-950/50">You have not posted anything yet.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {myListings.map((listing) => (
-            <div key={listing.id}>
-              <ListingCard listing={listing} />
-              <div className="flex gap-2 mt-1 text-xs">
-                {listing.status === "active" && (
-                  <button onClick={() => markSold(listing.id)} className="underline text-indigo-950/70">Mark sold</button>
-                )}
-                <button onClick={() => deleteListing(listing.id)} className="underline text-red-600/80">Delete</button>
+          {myListings.map(function (listing) {
+            return (
+              <div key={listing.id}>
+                <ListingCard listing={listing} />
+                <div className="flex gap-2 mt-1 text-xs">
+                  {listing.status === "active" && (
+                    <button onClick={() => markSold(listing.id)} className="underline text-indigo-950/70">Mark sold</button>
+                  )}
+                  <button onClick={() => deleteListing(listing.id)} className="underline text-red-600/80">Delete</button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -87,9 +125,9 @@ export default function ProfilePage() {
         <p className="text-sm text-indigo-950/50">Nothing saved yet.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {favorites.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
+          {favorites.map(function (listing) {
+            return <ListingCard key={listing.id} listing={listing} />;
+          })}
         </div>
       )}
     </div>

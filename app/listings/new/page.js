@@ -14,6 +14,8 @@ export default function NewListingPage() {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [area, setArea] = useState(OSOGBO_AREAS[0]);
   const [whatsapp, setWhatsapp] = useState("");
+  const [condition, setCondition] = useState("Used");
+  const [negotiable, setNegotiable] = useState(false);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -101,6 +103,8 @@ export default function NewListingPage() {
       location_area: area,
       images: imageUrls,
       whatsapp_number: normalizedWhatsapp,
+      condition: condition,
+      negotiable: negotiable,
       status: "active",
     });
 
@@ -131,11 +135,26 @@ export default function NewListingPage() {
         <input required type="text" placeholder={type === "sell" ? "What are you selling?" : "What do you need?"} value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <textarea placeholder="Add details buyers/sellers should know" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input required type="number" placeholder={type === "sell" ? "Price (NGN)" : "Your budget (NGN)"} value={price} onChange={(e) => setPrice(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+
+        {type === "sell" && (
+          <div className="flex gap-2">
+            <select value={condition} onChange={(e) => setCondition(e.target.value)} className="flex-1 border border-indigo-950/20 rounded px-3 py-2">
+              <option value="New">New</option>
+              <option value="Used">Used</option>
+              <option value="Refurbished">Refurbished</option>
+            </select>
+            <label className="flex items-center gap-2 text-sm text-indigo-950/70 border border-indigo-950/20 rounded px-3">
+              <input type="checkbox" checked={negotiable} onChange={(e) => setNegotiable(e.target.checked)} />
+              Negotiable
+            </label>
+          </div>
+        )}
+
         <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
-          {CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+          {CATEGORIES.map(function (c) { return (<option key={c} value={c}>{c}</option>); })}
         </select>
         <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
-          {OSOGBO_AREAS.map((a) => (<option key={a} value={a}>{a}</option>))}
+          {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a}>{a}</option>); })}
         </select>
         <div>
           <label className="block text-sm text-indigo-950/70 mb-1">Your WhatsApp number</label>

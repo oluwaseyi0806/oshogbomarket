@@ -36,6 +36,8 @@ export default function ChatPage() {
       if (!isMounted) return;
       setMessages(data || []);
 
+      await supabase.from("messages").update({ read: true }).eq("chat_id", chatId).eq("read", false).neq("sender_id", userData.user.id);
+
       channel = supabase
         .channel("chat-" + chatId)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "chat_id=eq." + chatId }, function (payload) {
