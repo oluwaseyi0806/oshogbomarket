@@ -1,6 +1,3 @@
-New-Item -ItemType Directory -Force -Path app\api\ai\search | Out-Null
-
-@'
 export async function POST(request) {
   const body = await request.json();
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -27,4 +24,3 @@ export async function POST(request) {
   }
   return Response.json(parsed);
 }
-'@ | Out-File -LiteralPath "app\api\ai\search\route.js" -Encoding utf8 -NoNewline

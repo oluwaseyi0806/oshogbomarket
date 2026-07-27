@@ -1,6 +1,3 @@
-New-Item -ItemType Directory -Force -Path app\api\ai\category | Out-Null
-
-@'
 export async function POST(request) {
   const body = await request.json();
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -21,4 +18,3 @@ export async function POST(request) {
   const text = data.content && data.content[0] ? data.content[0].text : "Other";
   return Response.json({ category: text.trim() });
 }
-'@ | Out-File -LiteralPath "app\api\ai\category\route.js" -Encoding utf8 -NoNewline

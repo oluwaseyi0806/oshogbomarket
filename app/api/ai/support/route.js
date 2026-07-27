@@ -1,6 +1,3 @@
-New-Item -ItemType Directory -Force -Path app\api\ai\support | Out-Null
-
-@'
 export async function POST(request) {
   const body = await request.json();
   const history = body.history || [];
@@ -24,4 +21,3 @@ export async function POST(request) {
   const text = data.content && data.content[0] ? data.content[0].text : "Sorry, I could not process that. Please try again.";
   return Response.json({ reply: text.trim() });
 }
-'@ | Out-File -LiteralPath "app\api\ai\support\route.js" -Encoding utf8 -NoNewline
