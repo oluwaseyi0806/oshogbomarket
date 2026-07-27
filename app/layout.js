@@ -2,6 +2,7 @@
 import Script from "next/script";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BottomNav from "../components/BottomNav";
 import OneSignalInit from "../components/OneSignalInit";
 
 export const metadata = {
@@ -17,8 +18,9 @@ export default function RootLayout({ children }) {
         <Script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" strategy="afterInteractive" />
         <OneSignalInit />
         <Navbar />
-        <main className="max-w-5xl mx-auto px-4 py-6 flex-1 w-full">{children}</main>
+        <main className="max-w-5xl mx-auto px-4 py-6 flex-1 w-full pb-20">{children}</main>
         <Footer />
+        <BottomNav />
       </body>
     </html>
   );
