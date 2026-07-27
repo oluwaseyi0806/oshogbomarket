@@ -85,16 +85,24 @@ export default function NewListingPage() {
     setAiWorking(false);
   }
 
-  async function handleGenerateDescription() {
+ async function handleGenerateDescription() {
     if (!title.trim()) return;
     setAiWorking(true);
-    const response = await fetch("/api/ai/describe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title, category: category, keywords: description }),
-    });
-    const data = await response.json();
-    setDescription(data.description);
+    try {
+      const response = await fetch("/api/ai/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title, category: category, keywords: description }),
+      });
+      const data = await response.json();
+      if (data.description) {
+        setDescription(data.description);
+      } else {
+        setErrorMsg("AI could not generate a description right now.");
+      }
+    } catch (err) {
+      setErrorMsg("AI request failed. Please try again.");
+    }
     setAiWorking(false);
   }
 

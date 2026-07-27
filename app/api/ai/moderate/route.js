@@ -8,7 +8,7 @@ export async function POST(request) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+     model: "claude-sonnet-5",
       max_tokens: 150,
       system: "You review marketplace listings for signs of scams or spam, such as unrealistic prices, prohibited items, phishing, or fake giveaways. Respond with ONLY valid JSON, nothing else, in this exact shape: {\"flagged\": true or false, \"reason\": \"short reason or empty string\"}",
       messages: [{ role: "user", content: "Title: " + body.title + ". Description: " + body.description + ". Price: " + body.price }],

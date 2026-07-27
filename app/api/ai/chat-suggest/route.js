@@ -8,7 +8,7 @@ export async function POST(request) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+     model: "claude-sonnet-5",
       max_tokens: 150,
       system: "Given the other person's last message in a marketplace chat, suggest 3 short, natural quick-reply options. Respond with ONLY a valid JSON array of 3 short strings, nothing else.",
       messages: [{ role: "user", content: body.lastMessage }],

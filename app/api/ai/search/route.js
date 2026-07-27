@@ -8,7 +8,7 @@ export async function POST(request) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+     model: "claude-sonnet-5",
       max_tokens: 200,
       system: "Parse the user's natural language marketplace search into ONLY valid JSON, nothing else, in this exact shape: {\"keywords\": \"string or empty\", \"category\": \"one of Phones & Tablets, Electronics, Fashion, Home & Furniture, Vehicles, Food & Groceries, Services, Other, or null\", \"maxPrice\": number or null, \"area\": \"an Osogbo area name if mentioned, or null\"}",
       messages: [{ role: "user", content: body.query }],

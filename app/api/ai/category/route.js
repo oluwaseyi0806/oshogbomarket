@@ -8,7 +8,7 @@ export async function POST(request) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 20,
       system: "Given a marketplace listing title, respond with only the single best matching category from this exact list, nothing else, no punctuation: Phones & Tablets, Electronics, Fashion, Home & Furniture, Vehicles, Food & Groceries, Services, Other",
       messages: [{ role: "user", content: body.title }],
