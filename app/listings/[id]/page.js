@@ -15,8 +15,12 @@ export default function ListingDetailPage() {
   const [startingChat, setStartingChat] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
+    supabase.auth.getUser().then(function (result) {
+      setCurrentUserId(result.data?.user?.id || null);
+    });
     fetchListing();
   }, [id]);
 
@@ -95,6 +99,7 @@ export default function ListingDetailPage() {
   if (!listing) return <p className="text-sm text-indigo-950/50">Listing not found.</p>;
 
   const isRequest = listing.type === "buy_request";
+  const isOwner = currentUserId && listing.user_id === currentUserId;
   const waMessage = "Hi, I saw your listing " + listing.title + " on OshogboMarket";
   const waLink = "https://wa.me/" + listing.whatsapp_number + "?text=" + encodeURIComponent(waMessage);
 
@@ -150,11 +155,19 @@ export default function ListingDetailPage() {
       <p className="mt-4 text-indigo-950/80 whitespace-pre-wrap">{listing.description}</p>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-6">
-        <button onClick={startChat} disabled={startingChat} className="bg-indigo-950 text-parchment font-semibold rounded px-6 py-3 disabled:opacity-50">
-          {startingChat ? "Opening chat..." : isRequest ? "I have this - chat with buyer" : "Chat with seller"}
-        </button>
-        {listing.whatsapp_number && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white font-semibold rounded px-6 py-3 text-center">Chat on WhatsApp</a>
+        {isOwner ? (
+          <a href={"/listings/" + id + "/edit"} className="bg-indigo-950 text-parchment font-semibold rounded px-6 py-3 text-center">
+            Edit this listing
+          </a>
+        ) : (
+          <>
+            <button onClick={startChat} disabled={startingChat} className="bg-indigo-950 text-parchment font-semibold rounded px-6 py-3 disabled:opacity-50">
+              {startingChat ? "Opening chat..." : isRequest ? "I have this - chat with buyer" : "Chat with seller"}
+            </button>
+            {listing.whatsapp_number && (
+              <a href={waLink} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white font-semibold rounded px-6 py-3 text-center">Chat on WhatsApp</a>
+            )}
+          </>
         )}
       </div>
 

@@ -9,6 +9,8 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [userId, setUserId] = useState(null);
   const [chatInfo, setChatInfo] = useState(null);
+  const [buyerProfile, setBuyerProfile] = useState(null);
+  const [sellerProfile, setSellerProfile] = useState(null);
   const [existingRating, setExistingRating] = useState(null);
   const [selectedStars, setSelectedStars] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
@@ -27,6 +29,13 @@ export default function ChatPage() {
       if (!isMounted) return;
       setChatInfo(chatData);
 
+      if (chatData) {
+        const { data: buyerData } = await supabase.from("users").select("name, avatar_url").eq("id", chatData.buyer_id).single();
+        const { data: sellerData } = await supabase.from("users").select("name, avatar_url").eq("id", chatData.seller_id).single();
+        setBuyerProfile(buyerData);
+        setSellerProfile(sellerData);
+      }
+
       if (userData?.user) {
         const { data: ratingData } = await supabase.from("ratings").select("*").eq("chat_id", chatId).eq("rater_id", userData.user.id).maybeSingle();
         if (isMounted) setExistingRating(ratingData);
@@ -36,7 +45,13 @@ export default function ChatPage() {
       if (!isMounted) return;
       setMessages(data || []);
 
-      await supabase.from("messages").update({ read: true }).eq("chat_id", chatId).eq("read", false).neq("sender_id", userData.user.id);
+      const { error: readError } = await supabase
+        .from("messages")
+        .update({ read: true })
+        .eq("chat_id", chatId)
+        .eq("read", false)
+        .neq("sender_id", userData.user.id);
+      if (readError) console.error("mark read error:", readError);
 
       channel = supabase
         .channel("chat-" + chatId)
@@ -58,6 +73,11 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  function profileFor(senderId) {
+    if (!chatInfo) return null;
+    return senderId === chatInfo.buyer_id ? buyerProfile : sellerProfile;
+  }
+
   async function sendMessage(e) {
     e.preventDefault();
     if (!text.trim() || !chatInfo) return;
@@ -72,11 +92,7 @@ export default function ChatPage() {
       fetch("/api/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerId: recipient.onesignal_player_id,
-          title: "New message on OshogboMarket",
-          message: text.trim(),
-        }),
+        body: JSON.stringify({ playerId: recipient.onesignal_player_id, title: "New message on OshogboMarket", message: text.trim() }),
       });
     }
 
@@ -115,11 +131,24 @@ export default function ChatPage() {
 
   return (
     <div className="max-w-lg mx-auto flex flex-col">
-      <div className="flex-1 overflow-y-auto space-y-2 p-2 bg-white rounded-lg border border-indigo-950/10 h-[60vh]">
+      <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-white rounded-lg border border-indigo-950/10 h-[60vh]">
         {messages.map(function (m) {
+          const isMine = m.sender_id === userId;
+          const profile = profileFor(m.sender_id);
           return (
-            <div key={m.id} className={"max-w-[75%] px-3 py-2 rounded-lg text-sm " + (m.sender_id === userId ? "bg-indigo-950 text-parchment ml-auto" : "bg-indigo-950/5 text-indigo-950")}>
-              {m.text}
+            <div key={m.id} className={"flex items-end gap-2 " + (isMine ? "flex-row-reverse" : "flex-row")}>
+              <div className="w-7 h-7 rounded-full bg-indigo-950/10 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-indigo-950">
+                {profile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  profile?.name ? profile.name.charAt(0).toUpperCase() : "?"
+                )}
+              </div>
+              <div className={"max-w-[70%] px-3 py-2 rounded-lg text-sm " + (isMine ? "bg-indigo-950 text-parchment" : "bg-indigo-950/5 text-indigo-950")}>
+                {!isMine && <p className="text-xs font-semibold text-indigo-950/60 mb-0.5">{profile?.name || "User"}</p>}
+                {m.text}
+              </div>
             </div>
           );
         })}
@@ -139,16 +168,12 @@ export default function ChatPage() {
             <div className="flex gap-1 mb-2">
               {[1, 2, 3, 4, 5].map(function (n) {
                 return (
-                  <button key={n} onClick={() => setSelectedStars(n)} className={"text-2xl " + (n <= selectedStars ? "opacity-100" : "opacity-30")}>
-                    *
-                  </button>
+                  <button key={n} onClick={() => setSelectedStars(n)} className={"text-2xl " + (n <= selectedStars ? "opacity-100" : "opacity-30")}>*</button>
                 );
               })}
             </div>
             <textarea value={ratingComment} onChange={(e) => setRatingComment(e.target.value)} placeholder="Optional comment" rows={2} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm mb-2" />
-            <button onClick={submitRating} disabled={!selectedStars} className="bg-indigo-950 text-parchment font-semibold rounded px-4 py-2 text-sm disabled:opacity-50">
-              Submit rating
-            </button>
+            <button onClick={submitRating} disabled={!selectedStars} className="bg-indigo-950 text-parchment font-semibold rounded px-4 py-2 text-sm disabled:opacity-50">Submit rating</button>
           </div>
         )}
       </div>
