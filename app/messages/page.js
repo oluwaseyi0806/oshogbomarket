@@ -22,6 +22,8 @@ export default function MessagesPage() {
       return;
     }
     const userId = userData.user.id;
+    const { data: blockedRows } = await supabase.from("blocks").select("blocked_id").eq("blocker_id", userId);
+    const blockedIds = (blockedRows || []).map(function (b) { return b.blocked_id; });
 
     const { data: sellerChats } = await supabase
       .from("chats")
@@ -60,6 +62,8 @@ export default function MessagesPage() {
 
     const sellerWithCounts = attachCounts(sellerChats);
     const buyerWithCounts = attachCounts(buyerChats);
+    const filteredSellerChats = (sellerChats || []).filter(function (c) { return !blockedIds.includes(c.buyer_id); });
+    const filteredBuyerChats = (buyerChats || []).filter(function (c) { return !blockedIds.includes(c.seller_id); });
 
     setAsSeller(sellerWithCounts);
     setAsBuyer(buyerWithCounts);

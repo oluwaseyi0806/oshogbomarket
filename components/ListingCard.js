@@ -28,6 +28,14 @@ export default function ListingCard({ listing }) {
       await supabase.from("favorites").delete().eq("user_id", userId).eq("listing_id", listing.id);
     } else {
       await supabase.from("favorites").insert({ user_id: userId, listing_id: listing.id });
+      if (listing.user_id !== userId) {
+        await supabase.from("notifications").insert({
+          user_id: listing.user_id,
+          type: "favorite",
+          message: "Someone saved your listing: " + listing.title,
+          link: "/listings/" + listing.id,
+        });
+      }
     }
     setIsFavorited(!isFavorited);
   }

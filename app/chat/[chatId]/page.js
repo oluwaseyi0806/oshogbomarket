@@ -78,11 +78,25 @@ export default function ChatPage() {
     return senderId === chatInfo.buyer_id ? buyerProfile : sellerProfile;
   }
 
+  async function blockThisUser() {
+    if (!chatInfo || !userId) return;
+    const otherUserId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
+    if (!confirm("Block this user? You will no longer see messages from them.")) return;
+    await supabase.from("blocks").insert({ blocker_id: userId, blocked_id: otherUserId });
+    alert("User blocked.");
+  }
+
   async function sendMessage(e) {
     e.preventDefault();
     if (!text.trim() || !chatInfo) return;
 
     await supabase.from("messages").insert({ chat_id: chatId, sender_id: userId, text: text.trim() });
+    await supabase.from("notifications").insert({
+      user_id: recipientId,
+      type: "message",
+      message: "New message about " + (chatInfo.listing_id ? "your listing" : "a listing"),
+      link: "/chat/" + chatId,
+    });
 
     const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
     const { data: recipient } = await supabase.from("users").select("onesignal_player_id, email").eq("id", recipientId).single();
@@ -153,6 +167,7 @@ export default function ChatPage() {
           );
         })}
         <div ref={bottomRef} />
+        <button onClick={blockThisUser} className="mt-3 text-xs text-red-600 underline">Block this user</button>
       </div>
       <form onSubmit={sendMessage} className="flex gap-2 mt-3">
         <input type="text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." className="flex-1 border border-indigo-950/20 rounded px-3 py-2" />

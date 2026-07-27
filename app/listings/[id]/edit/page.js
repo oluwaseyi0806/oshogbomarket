@@ -45,6 +45,17 @@ export default function EditListingPage() {
     setExistingImages(data.images || []);
   }
 
+  function moveImage(index, direction) {
+    setExistingImages(function (prev) {
+      const arr = prev.slice();
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= arr.length) return arr;
+      const temp = arr[index];
+      arr[index] = arr[newIndex];
+      arr[newIndex] = temp;
+      return arr;
+    });
+  }
   function removeExistingImage(url) {
     setExistingImages(function (prev) { return prev.filter(function (u) { return u !== url; }); });
   }
@@ -140,11 +151,18 @@ export default function EditListingPage() {
           <div className="flex flex-wrap gap-2">
             {existingImages.map(function (url, i) {
               return (
-                <button key={i} type="button" onClick={() => removeExistingImage(url)} className="relative w-16 h-16 rounded overflow-hidden border border-indigo-950/20">
+                <div key={i} className="relative w-16 h-16 rounded overflow-hidden border border-indigo-950/20">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={url} alt="" className="w-full h-full object-cover" />
-                  <span className="absolute inset-0 bg-red-600/60 text-white text-xs flex items-center justify-center opacity-0 hover:opacity-100">Remove</span>
-                </button>
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-0.5 opacity-0 hover:opacity-100">
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => moveImage(i, -1)} className="bg-white/90 text-indigo-950 text-xs px-1 rounded">Left</button>
+                      <button type="button" onClick={() => moveImage(i, 1)} className="bg-white/90 text-indigo-950 text-xs px-1 rounded">Right</button>
+                    </div>
+                    <button type="button" onClick={() => removeExistingImage(url)} className="bg-red-600 text-white text-xs px-1 rounded">Remove</button>
+                  </div>
+                  {i === 0 && <span className="absolute bottom-0 left-0 bg-gold-500 text-indigo-950 text-[9px] font-bold px-1">Main</span>}
+                </div>
               );
             })}
           </div>
