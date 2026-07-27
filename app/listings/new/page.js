@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
-import { OSOGBO_AREAS, CATEGORIES } from "../../../lib/osogboAreas";
+import { OSOGBO_AREAS, CATEGORIES, CATEGORY_FIELDS } from "../../../lib/osogboAreas";
 import { compressImage } from "../../../lib/compressImage";
 
 export default function NewListingPage() {
@@ -12,14 +12,18 @@ export default function NewListingPage() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState("");
   const [area, setArea] = useState(OSOGBO_AREAS[0]);
   const [whatsapp, setWhatsapp] = useState("");
   const [condition, setCondition] = useState("Used");
   const [negotiable, setNegotiable] = useState(false);
+  const [attributes, setAttributes] = useState({});
   const [files, setFiles] = useState([]);
   const [videoFile, setVideoFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [aiWorking, setAiWorking] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [priceHint, setPriceHint] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -30,6 +34,25 @@ export default function NewListingPage() {
     }
     loadProfile();
   }, []);
+
+  useEffect(() => {
+    async function loadPriceHint() {
+      if (!title || title.length < 3) {
+        setPriceHint("");
+        return;
+      }
+      const { data } = await supabase.from("listings").select("price").eq("category", category).eq("status", "active").limit(20);
+      if (data && data.length >= 2) {
+        const prices = data.map(function (d) { return d.price; }).filter(Boolean);
+        if (prices.length >= 2) {
+          const min = Math.min.apply(null, prices);
+          const max = Math.max.apply(null, prices);
+          setPriceHint("Similar " + category + " listings in Osogbo range from NGN " + min.toLocaleString() + " to NGN " + max.toLocaleString());
+        }
+      }
+    }
+    loadPriceHint();
+  }, [category, title]);
 
   function normalizeWhatsapp(raw) {
     const digits = raw.replace(/\D/g, "");
@@ -47,6 +70,32 @@ export default function NewListingPage() {
     }
     setErrorMsg("");
     setVideoFile(file);
+  }
+
+  async function handleSuggestCategory() {
+    if (!title.trim()) return;
+    setAiWorking(true);
+    const response = await fetch("/api/ai/category", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title }),
+    });
+    const data = await response.json();
+    if (CATEGORIES.includes(data.category)) setCategory(data.category);
+    setAiWorking(false);
+  }
+
+  async function handleGenerateDescription() {
+    if (!title.trim()) return;
+    setAiWorking(true);
+    const response = await fetch("/api/ai/describe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title, category: category, keywords: description }),
+    });
+    const data = await response.json();
+    setDescription(data.description);
+    setAiWorking(false);
   }
 
   async function handleSubmit(e) {
@@ -115,6 +164,21 @@ export default function NewListingPage() {
 
     await supabase.from("users").update({ whatsapp_number: normalizedWhatsapp }).eq("id", userData.user.id);
 
+    let flagged = false;
+    let flagReason = "";
+    try {
+      const modResponse = await fetch("/api/ai/moderate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title, description: description, price: price }),
+      });
+      const modData = await modResponse.json();
+      flagged = !!modData.flagged;
+      flagReason = modData.reason || "";
+    } catch (err) {
+      flagged = false;
+    }
+
     const { error } = await supabase.from("listings").insert({
       user_id: userData.user.id,
       type,
@@ -122,12 +186,16 @@ export default function NewListingPage() {
       description,
       price: Number(price),
       category,
+      custom_category: category === "Other" ? customCategory : null,
       location_area: area,
       images: imageUrls,
       video_url: videoUrl,
       whatsapp_number: normalizedWhatsapp,
       condition: condition,
       negotiable: negotiable,
+      attributes: attributes,
+      ai_flagged: flagged,
+      ai_flag_reason: flagReason,
       status: "active",
     });
 
@@ -155,9 +223,21 @@ export default function NewListingPage() {
       {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input required type="text" placeholder={type === "sell" ? "What are you selling?" : "What do you need?"} value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+        <input required type="text" placeholder={type === "sell" ? "What are you selling? Anything goes." : "What do you need?"} value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+
+        <div className="flex gap-2">
+          <button type="button" onClick={handleSuggestCategory} disabled={aiWorking || !title.trim()} className="text-xs bg-indigo-950/5 text-indigo-950 rounded px-3 py-2 disabled:opacity-50">
+            AI: Suggest category
+          </button>
+          <button type="button" onClick={handleGenerateDescription} disabled={aiWorking || !title.trim()} className="text-xs bg-indigo-950/5 text-indigo-950 rounded px-3 py-2 disabled:opacity-50">
+            {aiWorking ? "Working..." : "AI: Write description"}
+          </button>
+        </div>
+
         <textarea placeholder="Add details buyers/sellers should know" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input required type="number" placeholder={type === "sell" ? "Price (NGN)" : "Your budget (NGN)"} value={price} onChange={(e) => setPrice(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+
+        {priceHint && <p className="text-xs text-indigo-950/50">{priceHint}</p>}
 
         {type === "sell" && (
           <div className="flex gap-2">
@@ -176,6 +256,30 @@ export default function NewListingPage() {
         <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
           {CATEGORIES.map(function (c) { return (<option key={c} value={c}>{c}</option>); })}
         </select>
+
+        {category === "Other" && (
+          <input type="text" placeholder="Describe what type of item this is" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+        )}
+
+        {CATEGORY_FIELDS[category] && (
+          <div className="space-y-2 border border-indigo-950/10 rounded p-3 bg-indigo-950/5">
+            <p className="text-xs font-semibold text-indigo-950/60">Additional details for {category}</p>
+            {CATEGORY_FIELDS[category].map(function (field) {
+              if (field.type === "select") {
+                return (
+                  <select key={field.key} value={attributes[field.key] || ""} onChange={(e) => setAttributes(Object.assign({}, attributes, { [field.key]: e.target.value }))} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
+                    <option value="">{field.label}</option>
+                    {field.options.map(function (opt) { return (<option key={opt} value={opt}>{opt}</option>); })}
+                  </select>
+                );
+              }
+              return (
+                <input key={field.key} type={field.type} placeholder={field.label} value={attributes[field.key] || ""} onChange={(e) => setAttributes(Object.assign({}, attributes, { [field.key]: e.target.value }))} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+              );
+            })}
+          </div>
+        )}
+
         <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
           {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a}>{a}</option>); })}
         </select>

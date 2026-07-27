@@ -140,6 +140,17 @@ export default function ChatPage() {
       setExistingRating({ stars: selectedStars, comment: ratingComment });
     }
   }
+  async function getSuggestions() {
+    const lastOther = messages.slice().reverse().find(function (m) { return m.sender_id !== userId; });
+    if (!lastOther) return;
+    const response = await fetch("/api/ai/chat-suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lastMessage: lastOther.text }),
+    });
+    const data = await response.json();
+    setSuggestions(data.suggestions || []);
+  }
 
   const otherPersonLabel = chatInfo && userId === chatInfo.buyer_id ? "the seller" : "the buyer";
 
@@ -169,6 +180,20 @@ export default function ChatPage() {
         <div ref={bottomRef} />
         <button onClick={blockThisUser} className="mt-3 text-xs text-red-600 underline">Block this user</button>
       </div>
+      <button onClick={getSuggestions} type="button" className="text-xs text-indigo-950/60 underline mt-2 self-start">
+        AI: Suggest replies
+      </button>
+      {suggestions.length > 0 && (
+        <div className="flex gap-2 flex-wrap mt-1">
+          {suggestions.map(function (s, i) {
+            return (
+              <button key={i} type="button" onClick={() => setText(s)} className="text-xs bg-indigo-950/5 text-indigo-950 rounded-full px-3 py-1">
+                {s}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <form onSubmit={sendMessage} className="flex gap-2 mt-3">
         <input type="text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." className="flex-1 border border-indigo-950/20 rounded px-3 py-2" />
         <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2">Send</button>

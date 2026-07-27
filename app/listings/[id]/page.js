@@ -158,6 +158,15 @@ export default function ListingDetailPage() {
         </p>
       )}
       <p className="mt-4 text-indigo-950/80 whitespace-pre-wrap">{listing.description}</p>
+      {listing.attributes && Object.keys(listing.attributes).length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.entries(listing.attributes).map(function (entry) {
+            return entry[1] ? (
+              <span key={entry[0]} className="bg-indigo-950/5 text-indigo-950 text-xs px-2 py-1 rounded">{entry[1]}</span>
+            ) : null;
+          })}
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-2 mt-6">
         {isOwner ? (

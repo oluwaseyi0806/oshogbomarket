@@ -73,7 +73,7 @@ export default function AdminPage() {
         <div className="space-y-2">
           {listings.map((l) => (
             <div key={l.id} className="flex items-center justify-between bg-white border border-indigo-950/10 rounded p-3 text-sm">
-              <span>{l.title} - {l.status}</span>
+              <span>{l.title} - {l.status} {isBoosted && <span className="text-gold-500 font-bold">(Boosted)</span>} {l.ai_flagged && <span className="text-red-600 font-bold">(AI Flagged: {l.ai_flag_reason})</span>}</span>
               <button onClick={() => deleteListing(l.id)} className="text-red-600 underline text-xs">Delete</button>
             </div>
           ))}

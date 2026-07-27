@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BottomNav from "../components/BottomNav";
 import OneSignalInit from "../components/OneSignalInit";
+import SupportWidget from "../components/SupportWidget";
 
 export const metadata = {
   title: "OshogboMarket - Buy and sell in Osogbo",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
         <Navbar />
         <main className="max-w-5xl mx-auto px-4 py-6 flex-1 w-full pb-20">{children}</main>
         <Footer />
+        <SupportWidget />
         <BottomNav />
       </body>
     </html>
