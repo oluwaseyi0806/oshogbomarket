@@ -1,22 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS } from "../../lib/osogboAreas";
 
 export default function ArtisansPage() {
+  const searchParams = useSearchParams();
   const [artisans, setArtisans] = useState([]);
   const [skillFilter, setSkillFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchTerm(q);
+  }, [searchParams]);
+
+  useEffect(() => {
     load();
-  }, [skillFilter]);
+  }, [skillFilter, searchTerm]);
 
   async function load() {
     setLoading(true);
     let query = supabase.from("users").select("*").eq("is_artisan", true);
     if (skillFilter) query = query.eq("artisan_skill", skillFilter);
+    if (searchTerm) {
+      query = query.or("artisan_skill.ilike.%" + searchTerm + "%,name.ilike.%" + searchTerm + "%,bio.ilike.%" + searchTerm + "%");
+    }
     const { data } = await query;
 
     const withRatings = [];
@@ -35,8 +46,16 @@ export default function ArtisansPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">Find a skilled artisan in Osogbo</h1>
-      <p className="text-sm text-indigo-950/60 mb-4">Plumbers, electricians, painters, and more.</p>
+      <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">Find a skilled worker in Osogbo</h1>
+      <p className="text-sm text-indigo-950/60 mb-4">Plumbers, electricians, painters, tutors, and more.</p>
+
+      <input
+        type="text"
+        placeholder="Search by service, name, or skill..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-3"
+      />
 
       <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4">
         <option value="">All skills</option>
@@ -46,7 +65,10 @@ export default function ArtisansPage() {
       {loading ? (
         <p className="text-sm text-indigo-950/50">Loading...</p>
       ) : artisans.length === 0 ? (
-        <p className="text-sm text-indigo-950/50">No artisans found for this skill yet.</p>
+        <div className="text-center py-10 border border-dashed border-indigo-950/20 rounded-lg">
+          <p className="text-sm text-indigo-950/50">No matching artisans found yet.</p>
+          <Link href="/profile" className="text-xs underline text-indigo-900 mt-2 inline-block">Be the first to register this skill</Link>
+        </div>
       ) : (
         <div className="space-y-3">
           {artisans.map(function (artisan) {
@@ -63,6 +85,7 @@ export default function ArtisansPage() {
                 <div>
                   <p className="font-semibold text-indigo-950">{artisan.name}</p>
                   <p className="text-sm text-indigo-950/60">{artisan.artisan_skill} - {artisan.years_experience || 0} years experience</p>
+                  {artisan.bio && <p className="text-xs text-indigo-950/50 line-clamp-1">{artisan.bio}</p>}
                   {artisan.rating && (
                     <p className="text-xs text-indigo-950/50">{artisan.rating.avg.toFixed(1)} stars ({artisan.rating.count} reviews)</p>
                   )}

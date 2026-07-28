@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
 import ListingCard from "../../components/ListingCard";
-import { ARTISAN_SKILLS } from "../../lib/osogboAreas";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -12,9 +12,18 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [userId, setUserId] = useState(null);const [isArtisan, setIsArtisan] = useState(false);
+  const [userId, setUserId] = useState(null);
+
+  const [isArtisan, setIsArtisan] = useState(false);
   const [artisanSkill, setArtisanSkill] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
+  const [bio, setBio] = useState("");
+  const [artisanArea, setArtisanArea] = useState(OSOGBO_AREAS[0]);
+  const [workPhotos, setWorkPhotos] = useState([]);
+  const [newWorkPhotoFiles, setNewWorkPhotoFiles] = useState([]);
+  const [workVideoUrl, setWorkVideoUrl] = useState(null);
+  const [newWorkVideoFile, setNewWorkVideoFile] = useState(null);
+  const [savingArtisan, setSavingArtisan] = useState(false);
   const [artisanRating, setArtisanRating] = useState(null);
 
   useEffect(() => {
@@ -31,9 +40,14 @@ export default function ProfilePage() {
 
     const { data: profileData } = await supabase.from("users").select("*").eq("id", userData.user.id).single();
     setProfile(profileData);
+
     setIsArtisan(!!profileData?.is_artisan);
     setArtisanSkill(profileData?.artisan_skill || "");
     setYearsExperience(profileData?.years_experience || "");
+    setBio(profileData?.bio || "");
+    setArtisanArea(profileData?.service_area || OSOGBO_AREAS[0]);
+    setWorkPhotos(profileData?.work_photos || []);
+    setWorkVideoUrl(profileData?.work_video_url || null);
 
     const { data: ratingsData } = await supabase.from("ratings").select("stars").eq("rated_user_id", userData.user.id);
     if (ratingsData && ratingsData.length > 0) {
@@ -54,16 +68,70 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if (!file || !userId) return;
     setUploading(true);
-
     const filePath = userId + "/avatar-" + Date.now() + "-" + file.name;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-
     if (!uploadError) {
       const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       await supabase.from("users").update({ avatar_url: publicUrlData.publicUrl }).eq("id", userId);
       setProfile(function (prev) { return Object.assign({}, prev, { avatar_url: publicUrlData.publicUrl }); });
     }
     setUploading(false);
+  }
+
+  function removeWorkPhoto(url) {
+    setWorkPhotos(function (prev) { return prev.filter(function (u) { return u !== url; }); });
+  }
+
+  function handleWorkVideoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      alert("Video must be under 50MB.");
+      return;
+    }
+    setNewWorkVideoFile(file);
+  }
+
+  async function saveArtisanProfile() {
+    if (!userId) return;
+    setSavingArtisan(true);
+
+    let finalPhotos = workPhotos.slice();
+    for (const file of newWorkPhotoFiles) {
+      const filePath = userId + "/work-" + Date.now() + "-" + file.name;
+      const { error: uploadError } = await supabase.storage.from("listing-images").upload(filePath, file);
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage.from("listing-images").getPublicUrl(filePath);
+        finalPhotos.push(publicUrlData.publicUrl);
+      }
+    }
+
+    let finalVideoUrl = workVideoUrl;
+    if (newWorkVideoFile) {
+      const videoPath = userId + "/work-video-" + Date.now() + "-" + newWorkVideoFile.name;
+      const { error: videoError } = await supabase.storage.from("listing-videos").upload(videoPath, newWorkVideoFile);
+      if (!videoError) {
+        const { data: videoPublicUrl } = supabase.storage.from("listing-videos").getPublicUrl(videoPath);
+        finalVideoUrl = videoPublicUrl.publicUrl;
+      }
+    }
+
+    await supabase.from("users").update({
+      is_artisan: isArtisan,
+      artisan_skill: artisanSkill,
+      years_experience: yearsExperience ? Number(yearsExperience) : null,
+      service_area: artisanArea,
+      bio: bio,
+      work_photos: finalPhotos,
+      work_video_url: finalVideoUrl,
+    }).eq("id", userId);
+
+    setWorkPhotos(finalPhotos);
+    setWorkVideoUrl(finalVideoUrl);
+    setNewWorkPhotoFiles([]);
+    setNewWorkVideoFile(null);
+    setSavingArtisan(false);
+    alert("Artisan profile saved.");
   }
 
   async function markSold(id) {
@@ -76,16 +144,6 @@ export default function ProfilePage() {
     load();
   }
 
-  async function saveArtisanProfile() {
-    await supabase.from("users").update({
-      is_artisan: isArtisan,
-      artisan_skill: artisanSkill,
-      years_experience: yearsExperience ? Number(yearsExperience) : null,
-      service_area: "Osogbo",
-    }).eq("id", userId);
-    alert("Artisan profile saved.");
-  }
-
   async function logout() {
     await supabase.auth.signOut();
     router.push("/");
@@ -96,25 +154,6 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mb-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-indigo-950 mb-3">
-          <input type="checkbox" checked={isArtisan} onChange={(e) => setIsArtisan(e.target.checked)} />
-          I offer a skilled service (plumbing, electrical, etc.)
-        </label>
-        {isArtisan && (
-          <div className="space-y-2">
-            <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
-              <option value="">Select your main skill</option>
-              {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
-            </select>
-            <input type="number" placeholder="Years of experience" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-            {artisanRating && (
-              <p className="text-xs text-indigo-950/60">{artisanRating.avg.toFixed(1)} out of 5 stars ({artisanRating.count} rating{artisanRating.count === 1 ? "" : "s"})</p>
-            )}
-            <button onClick={saveArtisanProfile} className="bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm">Save artisan profile</button>
-          </div>
-        )}
-      </div>
         <div className="flex items-center gap-4">
           <div className="relative w-20 h-20 rounded-full bg-indigo-950/10 overflow-hidden shrink-0">
             {profile?.avatar_url ? (
@@ -139,6 +178,63 @@ export default function ProfilePage() {
           </div>
         </div>
         <button onClick={logout} className="text-sm text-indigo-950/60 underline shrink-0">Log out</button>
+      </div>
+
+      <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mb-6">
+        <label className="flex items-center gap-2 text-sm font-semibold text-indigo-950 mb-3">
+          <input type="checkbox" checked={isArtisan} onChange={(e) => setIsArtisan(e.target.checked)} />
+          I offer a skilled service (plumbing, electrical, tailoring, etc.)
+        </label>
+
+        {isArtisan && (
+          <div className="space-y-3">
+            <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
+              <option value="">Select your main skill</option>
+              {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
+            </select>
+
+            <select value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
+              {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a}>{a}</option>); })}
+            </select>
+
+            <input type="number" placeholder="Years of experience" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+
+            <textarea placeholder="Short bio - describe your work, tools, or specialty" value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+
+            <div>
+              <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Photos of your work</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {workPhotos.map(function (url, i) {
+                  return (
+                    <button key={i} type="button" onClick={() => removeWorkPhoto(url)} className="relative w-16 h-16 rounded overflow-hidden border border-indigo-950/20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <span className="absolute inset-0 bg-red-600/60 text-white text-xs flex items-center justify-center opacity-0 hover:opacity-100">Remove</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <input type="file" accept="image/*" multiple onChange={(e) => setNewWorkPhotoFiles(Array.from(e.target.files))} className="w-full text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Video of your work (optional, max 50MB)</label>
+              {workVideoUrl && (
+                <video controls className="w-full rounded mb-2 bg-black" src={workVideoUrl} />
+              )}
+              <input type="file" accept="video/*" onChange={handleWorkVideoChange} className="w-full text-sm" />
+              {newWorkVideoFile && <p className="text-xs text-indigo-950/50 mt-1">{newWorkVideoFile.name} selected</p>}
+            </div>
+
+            {artisanRating && (
+              <p className="text-xs text-indigo-950/60">{artisanRating.avg.toFixed(1)} out of 5 stars ({artisanRating.count} rating{artisanRating.count === 1 ? "" : "s"})</p>
+            )}
+
+            <button onClick={saveArtisanProfile} disabled={savingArtisan} className="bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm disabled:opacity-50">
+              {savingArtisan ? "Saving..." : "Save artisan profile"}
+            </button>
+          </div>
+        )}
       </div>
 
       <h2 className="font-display font-bold text-indigo-950 mb-2">My listings</h2>

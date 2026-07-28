@@ -72,8 +72,8 @@ export default function ArtisanProfilePage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-16 h-16 rounded-full bg-indigo-950/10 overflow-hidden flex items-center justify-center font-bold text-2xl text-indigo-950">
+      <div className="flex items-center gap-4 mb-3">
+        <div className="w-16 h-16 rounded-full bg-indigo-950/10 overflow-hidden flex items-center justify-center font-bold text-2xl text-indigo-950 shrink-0">
           {artisan.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={artisan.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -84,9 +84,33 @@ export default function ArtisanProfilePage() {
         <div>
           <h1 className="font-display font-bold text-xl text-indigo-950">{artisan.name}</h1>
           <p className="text-sm text-indigo-950/60">{artisan.artisan_skill} - {artisan.years_experience || 0} years experience</p>
+          <p className="text-xs text-indigo-950/50">Location: {artisan.service_area || "Osogbo"}</p>
           {rating && <p className="text-xs text-indigo-950/50">{rating.avg.toFixed(1)} stars ({rating.count} reviews)</p>}
         </div>
       </div>
+
+      {artisan.bio && <p className="text-sm text-indigo-950/70 mb-4">{artisan.bio}</p>}
+
+      {artisan.work_video_url && (
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-indigo-950/60 mb-1">Video of their work</p>
+          <video controls className="w-full rounded-lg bg-black" src={artisan.work_video_url} />
+        </div>
+      )}
+
+      {artisan.work_photos && artisan.work_photos.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-indigo-950/60 mb-1">Photos of their work</p>
+          <div className="grid grid-cols-3 gap-2">
+            {artisan.work_photos.map(function (url, i) {
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded" />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleBooking} className="space-y-3 bg-white border border-indigo-950/10 rounded-lg p-4">
         <h2 className="font-display font-bold text-indigo-950">Request a booking</h2>

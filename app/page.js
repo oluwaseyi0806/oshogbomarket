@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import { OSOGBO_AREAS, CATEGORIES, CATEGORY_ICONS } from "../lib/osogboAreas";
 import ListingCard from "../components/ListingCard";
@@ -13,6 +14,13 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [recentlySold, setRecentlySold] = useState([]);
+  const [artisanSearchTerm, setArtisanSearchTerm] = useState("");
+  const router = useRouter();
+
+  function handleArtisanSearch(e) {
+    e.preventDefault();
+    router.push("/artisans?q=" + encodeURIComponent(artisanSearchTerm));
+  }
 
   useEffect(() => {
     fetchListings();
@@ -44,6 +52,25 @@ export default function HomePage() {
       <div className="mb-6">
         <h1 className="font-display font-bold text-2xl text-indigo-950">What is happening in Osogbo today</h1>
         <p className="text-indigo-950/60 text-sm mt-1">Browse what people are selling, or what they are looking to buy.</p>
+      </div>
+      <div className="bg-indigo-950 rounded-lg p-4 mb-6 text-parchment">
+        <div className="flex items-center gap-2 mb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-512.png" alt="" className="w-8 h-8 rounded-lg" />
+          <h2 className="font-display font-bold text-lg uppercase tracking-wide">Need Help With A Job?</h2>
+        </div>
+        <p className="text-sm text-parchment/70 mb-3">Find trusted plumbers, electricians, tailors, and more in Osogbo - or register your own skill so people can find you.</p>
+        <form onSubmit={handleArtisanSearch} className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="What service do you need? e.g. plumber"
+            value={artisanSearchTerm}
+            onChange={(e) => setArtisanSearchTerm(e.target.value)}
+            className="flex-1 border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm"
+          />
+          <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2 text-sm">Search</button>
+        </form>
+        <Link href="/profile" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
