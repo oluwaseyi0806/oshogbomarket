@@ -3,23 +3,26 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
-import { ARTISAN_SKILLS } from "../../lib/osogboAreas";
+import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
 
 function ArtisansContent() {
   const searchParams = useSearchParams();
   const [artisans, setArtisans] = useState([]);
   const [skillFilter, setSkillFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = searchParams.get("q");
+    const area = searchParams.get("area");
     if (q) setSearchTerm(q);
+    if (area) setLocationSearch(area);
   }, [searchParams]);
 
   useEffect(() => {
     load();
-  }, [skillFilter, searchTerm]);
+  }, [skillFilter, searchTerm, locationSearch]);
 
   async function load() {
     setLoading(true);
@@ -27,6 +30,9 @@ function ArtisansContent() {
     if (skillFilter) query = query.eq("artisan_skill", skillFilter);
     if (searchTerm) {
       query = query.or("artisan_skill.ilike.%" + searchTerm + "%,name.ilike.%" + searchTerm + "%,bio.ilike.%" + searchTerm + "%");
+    }
+    if (locationSearch) {
+      query = query.ilike("service_area", "%" + locationSearch + "%");
     }
     const { data } = await query;
 
@@ -57,10 +63,22 @@ function ArtisansContent() {
         className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-3"
       />
 
-      <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4">
+      <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-3">
         <option value="">All skills</option>
         {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
       </select>
+
+      <input
+        list="artisan-location-suggestions"
+        type="text"
+        placeholder="Search by location in Osogbo..."
+        value={locationSearch}
+        onChange={(e) => setLocationSearch(e.target.value)}
+        className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4"
+      />
+      <datalist id="artisan-location-suggestions">
+        {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
+      </datalist>
 
       {loading ? (
         <p className="text-sm text-indigo-950/50">Loading...</p>

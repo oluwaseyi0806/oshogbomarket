@@ -61,7 +61,14 @@ export default function ArtisanProfilePage() {
     await supabase.from("messages").insert({
       chat_id: newChat.id,
       sender_id: userData.user.id,
-      text: "Booking request for " + artisan.artisan_skill + (preferredDate ? " on " + preferredDate : "") + (address ? " at " + address : "") + (notes ? ". Notes: " + notes : ""),
+      text: "Job opportunity: " + artisan.artisan_skill + (preferredDate ? " on " + preferredDate : "") + (address ? " at " + address : "") + (notes ? ". Notes: " + notes : ""),
+    });
+
+    await supabase.from("notifications").insert({
+      user_id: id,
+      type: "job",
+      message: "New job opportunity: " + artisan.artisan_skill,
+      link: "/chat/" + newChat.id,
     });
 
     setBooking(false);
@@ -87,6 +94,15 @@ export default function ArtisanProfilePage() {
           <p className="text-xs text-indigo-950/50">Location: {artisan.service_area || "Osogbo"}</p>
           {rating && <p className="text-xs text-indigo-950/50">{rating.avg.toFixed(1)} stars ({rating.count} reviews)</p>}
         </div>
+      </div>
+
+      <div className="flex gap-2 mb-4">
+        {artisan.phone_number && (
+          <a href={"tel:" + artisan.phone_number} className="flex-1 bg-indigo-950 text-parchment font-semibold rounded px-4 py-2 text-center text-sm">Call</a>
+        )}
+        {artisan.whatsapp_number && (
+          <a href={"https://wa.me/" + artisan.whatsapp_number} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-semibold rounded px-4 py-2 text-center text-sm">WhatsApp</a>
+        )}
       </div>
 
       {artisan.bio && <p className="text-sm text-indigo-950/70 mb-4">{artisan.bio}</p>}

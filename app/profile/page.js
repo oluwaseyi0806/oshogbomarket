@@ -17,8 +17,10 @@ export default function ProfilePage() {
   const [isArtisan, setIsArtisan] = useState(false);
   const [artisanSkill, setArtisanSkill] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
-  const [bio, setBio] = useState("");
-  const [artisanArea, setArtisanArea] = useState(OSOGBO_AREAS[0]);
+const [bio, setBio] = useState("");
+  const [artisanArea, setArtisanArea] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [artisanWhatsapp, setArtisanWhatsapp] = useState("");
   const [workPhotos, setWorkPhotos] = useState([]);
   const [newWorkPhotoFiles, setNewWorkPhotoFiles] = useState([]);
   const [workVideoUrl, setWorkVideoUrl] = useState(null);
@@ -45,7 +47,9 @@ export default function ProfilePage() {
     setArtisanSkill(profileData?.artisan_skill || "");
     setYearsExperience(profileData?.years_experience || "");
     setBio(profileData?.bio || "");
-    setArtisanArea(profileData?.service_area || OSOGBO_AREAS[0]);
+    setArtisanArea(profileData?.service_area || "");
+    setPhoneNumber(profileData?.phone_number || "");
+    setArtisanWhatsapp(profileData?.whatsapp_number || "");
     setWorkPhotos(profileData?.work_photos || []);
     setWorkVideoUrl(profileData?.work_video_url || null);
 
@@ -116,7 +120,7 @@ export default function ProfilePage() {
       }
     }
 
-    await supabase.from("users").update({
+await supabase.from("users").update({
       is_artisan: isArtisan,
       artisan_skill: artisanSkill,
       years_experience: yearsExperience ? Number(yearsExperience) : null,
@@ -124,7 +128,10 @@ export default function ProfilePage() {
       bio: bio,
       work_photos: finalPhotos,
       work_video_url: finalVideoUrl,
+      phone_number: phoneNumber,
+      whatsapp_number: artisanWhatsapp,
     }).eq("id", userId);
+
 
     setWorkPhotos(finalPhotos);
     setWorkVideoUrl(finalVideoUrl);
@@ -193,9 +200,13 @@ export default function ProfilePage() {
               {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
             </select>
 
-            <select value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
-              {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a}>{a}</option>); })}
-            </select>
+           <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+            <datalist id="profile-area-suggestions">
+              {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
+            </datalist>
+
+            <input type="tel" placeholder="Call number (e.g. 08012345678)" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+            <input type="tel" placeholder="WhatsApp number (e.g. 08012345678)" value={artisanWhatsapp} onChange={(e) => setArtisanWhatsapp(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
 
             <input type="number" placeholder="Years of experience" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
 

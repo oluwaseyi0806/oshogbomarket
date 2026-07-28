@@ -288,9 +288,17 @@ export default function NewListingPage() {
           </div>
         )}
 
-        <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
-          {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a}>{a}</option>); })}
-        </select>
+       <input
+          list="new-listing-area-suggestions"
+          type="text"
+          placeholder="Location in Osogbo"
+          value={area}
+          onChange={(e) => setArea(e.target.value)}
+          className="w-full border border-indigo-950/20 rounded px-3 py-2"
+        />
+        <datalist id="new-listing-area-suggestions">
+          {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
+        </datalist>
         <div>
           <label className="block text-sm text-indigo-950/70 mb-1">Your WhatsApp number</label>
           <input required type="tel" placeholder="e.g. 08012345678" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />

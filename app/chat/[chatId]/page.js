@@ -83,10 +83,11 @@ export default function ChatPage() {
 
     const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
 
+  const isJobChat = !chatInfo.listing_id;
     await supabase.from("notifications").insert({
       user_id: recipientId,
-      type: "message",
-      message: "New message on OshogboMarket",
+      type: isJobChat ? "job" : "message",
+      message: isJobChat ? "New message about a job opportunity" : "New message on OshogboMarket",
       link: "/chat/" + chatId,
     });
 
@@ -109,7 +110,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           toEmail: recipient.email,
-          listingTitle: listingData?.title || "your booking",
+        listingTitle: listingData?.title || "a job opportunity",
           messageText: text.trim(),
           chatUrl: window.location.origin + "/chat/" + chatId,
         }),
