@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS } from "../../lib/osogboAreas";
 
-export default function ArtisansPage() {
+function ArtisansContent() {
   const searchParams = useSearchParams();
   const [artisans, setArtisans] = useState([]);
   const [skillFilter, setSkillFilter] = useState("");
@@ -96,5 +96,13 @@ export default function ArtisansPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ArtisansPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-indigo-950/50">Loading...</p>}>
+      <ArtisansContent />
+    </Suspense>
   );
 }
