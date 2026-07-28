@@ -32,8 +32,8 @@ export default function ChatPage() {
       setChatInfo(chatData);
 
       if (chatData) {
-        const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen").eq("id", chatData.buyer_id).single();
-        const { data: sellerData } = await supabase.from("users").select("name, avatar_url, last_seen").eq("id", chatData.seller_id).single();
+      const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatData.buyer_id).single();
+        const { data: sellerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatData.seller_id).single();
         setBuyerProfile(buyerData);
         setSellerProfile(sellerData);
       }
@@ -162,14 +162,16 @@ export default function ChatPage() {
 
   const otherPersonLabel = chatInfo && userId === chatInfo.buyer_id ? "the seller" : "the buyer";
   const otherProfile = chatInfo ? (userId === chatInfo.buyer_id ? sellerProfile : buyerProfile) : null;
+  const otherUserId = chatInfo ? (userId === chatInfo.buyer_id ? chatInfo.seller_id : chatInfo.buyer_id) : null;
+  const otherProfileLink = otherProfile?.is_artisan ? "/artisans/" + otherUserId : "/seller/" + otherUserId;
 
   return (
     <div className="max-w-lg mx-auto flex flex-col">
-      {otherProfile && (
-        <div className="flex items-center gap-2 mb-2 text-sm text-indigo-950">
+    {otherProfile && (
+        <a href={otherProfileLink} className="flex items-center gap-2 mb-2 text-sm text-indigo-950 hover:underline">
           <span className={"w-2 h-2 rounded-full " + (isOnline(otherProfile.last_seen) ? "bg-green-500" : "bg-indigo-950/20")} />
-          {otherProfile.name} - {isOnline(otherProfile.last_seen) ? "Online" : "Offline"}
-        </div>
+          {otherProfile.name} - {isOnline(otherProfile.last_seen) ? "Online" : "Offline"} - View profile
+        </a>
       )}
       <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-white rounded-lg border border-indigo-950/10 h-[60vh]">
         {messages.map(function (m) {

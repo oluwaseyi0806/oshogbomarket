@@ -16,7 +16,7 @@ export async function POST(request) {
       Authorization: "Bearer " + process.env.RESEND_API_KEY,
     },
     body: JSON.stringify({
-      from: "OshogboMarket <onboarding@resend.dev>",
+     from: "OshogboMarket <hello@oshogbomarket.com.ng>",
       to: [toEmail],
       subject: "New message about " + listingTitle,
       html:

@@ -10,14 +10,16 @@ function ArtisansContent() {
   const [artisans, setArtisans] = useState([]);
   const [skillFilter, setSkillFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [locationSearch, setLocationSearch] = useState("");
+const [locationSearch, setLocationSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
     const area = searchParams.get("area");
-    if (q) setSearchTerm(q);
+  if (q) setSearchTerm(q);
     if (area) setLocationSearch(area);
+    if (!q && !area) setShowFilters(true);
   }, [searchParams]);
 
   useEffect(() => {
@@ -52,37 +54,44 @@ function ArtisansContent() {
 
   return (
     <div className="max-w-2xl mx-auto">
-     <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">
+  <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">
         {searchTerm ? "Results for \"" + searchTerm + "\"" : "Find a skilled worker in Osogbo"}
       </h1>
-      <p className="text-sm text-indigo-950/60 mb-4">
+      <p className="text-sm text-indigo-950/60 mb-3">
         {loading ? "Searching..." : artisans.length + " artisan" + (artisans.length === 1 ? "" : "s") + " found" + (locationSearch ? " near " + locationSearch : "")}
       </p>
 
-      <input
-        type="text"
-        placeholder="Search by service, name, or skill..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-3"
-      />
-
-      <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-3">
-        <option value="">All skills</option>
-        {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
-      </select>
-
-      <input
-        list="artisan-location-suggestions"
-        type="text"
-        placeholder="Search by location in Osogbo..."
-        value={locationSearch}
-        onChange={(e) => setLocationSearch(e.target.value)}
-        className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4"
-      />
-      <datalist id="artisan-location-suggestions">
-        {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-      </datalist>
+      {!showFilters ? (
+        <button onClick={() => setShowFilters(true)} className="text-xs underline text-indigo-900 mb-4">
+          Refine search (skill, location, keyword)
+        </button>
+      ) : (
+        <div className="mb-4 space-y-2">
+          <input
+            type="text"
+            placeholder="Search by service, name, or skill..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border border-indigo-950/20 rounded px-3 py-2"
+          />
+          <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2">
+            <option value="">All skills</option>
+            {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
+          </select>
+          <input
+            list="artisan-location-suggestions"
+            type="text"
+            placeholder="Search by location in Osogbo..."
+            value={locationSearch}
+            onChange={(e) => setLocationSearch(e.target.value)}
+            className="w-full border border-indigo-950/20 rounded px-3 py-2"
+          />
+          <datalist id="artisan-location-suggestions">
+            {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
+          </datalist>
+          <button onClick={() => setShowFilters(false)} className="text-xs underline text-indigo-950/50">Hide filters</button>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-indigo-950/50">Loading...</p>

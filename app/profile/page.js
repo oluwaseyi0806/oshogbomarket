@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [newWorkVideoFile, setNewWorkVideoFile] = useState(null);
   const [savingArtisan, setSavingArtisan] = useState(false);
   const [artisanRating, setArtisanRating] = useState(null);
+  const [hasArtisanProfile, setHasArtisanProfile] = useState(false);
 
   useEffect(() => {
     load();
@@ -44,6 +45,7 @@ export default function ProfilePage() {
     setProfile(profileData);
 
     setIsArtisan(!!profileData?.is_artisan);
+    setHasArtisanProfile(!!profileData?.is_artisan && !!profileData?.artisan_skill);
     setArtisanSkill(profileData?.artisan_skill || "");
     setYearsExperience(profileData?.years_experience || "");
     setBio(profileData?.bio || "");
@@ -100,7 +102,11 @@ export default function ProfilePage() {
     if (!userId) return;
 
     if (!profile?.avatar_url) {
-      alert("Please upload a clear profile picture first (use the + button on your photo above) before saving your artisan profile.");
+      alert("Please upload a clear profile picture first before saving your artisan profile.");
+      return;
+    }
+    if (!artisanSkill) {
+      alert("Please select your main skill.");
       return;
     }
 
@@ -127,7 +133,7 @@ export default function ProfilePage() {
     }
 
     await supabase.from("users").update({
-      is_artisan: isArtisan,
+      is_artisan: true,
       artisan_skill: artisanSkill,
       years_experience: yearsExperience ? Number(yearsExperience) : null,
       service_area: artisanArea,
@@ -143,7 +149,16 @@ export default function ProfilePage() {
     setNewWorkPhotoFiles([]);
     setNewWorkVideoFile(null);
     setSavingArtisan(false);
+    setHasArtisanProfile(true);
     alert("Artisan profile saved.");
+  }
+
+  async function removeArtisanProfile() {
+    if (!confirm("Remove your artisan profile? People will no longer find you in artisan search. Your account and listings stay untouched.")) return;
+    await supabase.from("users").update({ is_artisan: false }).eq("id", userId);
+    setIsArtisan(false);
+    setHasArtisanProfile(false);
+    alert("Artisan profile removed.");
   }
 
   async function markSold(id) {
@@ -201,9 +216,13 @@ export default function ProfilePage() {
         {isArtisan && (
           <div className="space-y-3">
             {!profile?.avatar_url && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
-                A clear profile picture is required before you can save your artisan profile. Use the + button on your photo above to upload one.
-              </p>
+              <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded p-3">
+                <p className="text-xs text-red-600">A clear profile picture is required for your artisan card.</p>
+                <label className="bg-red-600 text-white text-xs font-semibold rounded px-3 py-1.5 cursor-pointer shrink-0 ml-2">
+                  {uploading ? "..." : "Add Profile Picture"}
+                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+                </label>
+              </div>
             )}
 
             <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
@@ -252,9 +271,21 @@ export default function ProfilePage() {
               <p className="text-xs text-indigo-950/60">{artisanRating.avg.toFixed(1)} out of 5 stars ({artisanRating.count} rating{artisanRating.count === 1 ? "" : "s"})</p>
             )}
 
-            <button onClick={saveArtisanProfile} disabled={savingArtisan} className="bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm disabled:opacity-50">
-              {savingArtisan ? "Saving..." : "Save artisan profile"}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={saveArtisanProfile} disabled={savingArtisan} className="flex-1 bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm disabled:opacity-50">
+                {savingArtisan ? "Saving..." : hasArtisanProfile ? "Save changes" : "Create artisan profile"}
+              </button>
+              {hasArtisanProfile && (
+                <button onClick={removeArtisanProfile} className="bg-red-600 text-white font-semibold rounded px-3 py-2 text-sm">
+                  Remove profile
+                </button>
+              )}
+            </div>
+            {hasArtisanProfile && (
+              <a href={"/artisans/" + userId} target="_blank" rel="noopener noreferrer" className="block text-xs underline text-indigo-900 text-center">
+                Preview my public artisan card
+              </a>
+            )}
           </div>
         )}
       </div>

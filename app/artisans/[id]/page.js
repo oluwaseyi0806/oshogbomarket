@@ -78,11 +78,7 @@ export default function ArtisanProfilePage() {
       fetch("/api/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerId: artisan.onesignal_player_id,
-          title: "New job opportunity on OshogboMarket",
-          message: messageText,
-        }),
+        body: JSON.stringify({ playerId: artisan.onesignal_player_id, title: "New job opportunity on OshogboMarket", message: messageText }),
       });
     }
 
@@ -105,30 +101,46 @@ export default function ArtisanProfilePage() {
 
   if (!artisan) return <p className="text-sm text-indigo-950/50">Loading...</p>;
 
+  const online = isOnline(artisan.last_seen);
+
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="flex items-center gap-4 mb-3">
-        <div className="w-16 h-16 rounded-full bg-indigo-950/10 overflow-hidden flex items-center justify-center font-bold text-2xl text-indigo-950 shrink-0">
-          {artisan.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={artisan.avatar_url} alt="" className="w-full h-full object-cover" />
-          ) : (
-            artisan.name ? artisan.name.charAt(0).toUpperCase() : "?"
-          )}
+    <div className="max-w-lg mx-auto space-y-4">
+      {/* ID CARD */}
+      <div className="bg-indigo-950 rounded-xl p-5 text-parchment shadow-lg">
+        <div className="flex items-center gap-2 mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-512.png" alt="" className="w-6 h-6 rounded" />
+          <span className="text-xs font-bold tracking-widest uppercase text-gold-500">OshogboMarket Verified Card</span>
         </div>
-        <div>
-          <h1 className="font-display font-bold text-xl text-indigo-950">{artisan.name}</h1>
-          <p className="text-sm text-indigo-950/60">{artisan.artisan_skill} - {artisan.years_experience || 0} years experience</p>
-          <p className="text-xs text-indigo-950/50">Location: {artisan.service_area || "Osogbo"}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className={"w-2 h-2 rounded-full " + (isOnline(artisan.last_seen) ? "bg-green-500" : "bg-indigo-950/20")} />
-            <span className="text-xs text-indigo-950/50">{isOnline(artisan.last_seen) ? "Online" : "Offline"}</span>
+
+        <div className="flex items-center gap-4">
+          <div className="w-24 h-24 rounded-lg bg-white/10 overflow-hidden flex items-center justify-center font-bold text-3xl shrink-0 border-2 border-gold-500">
+            {artisan.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={artisan.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              artisan.name ? artisan.name.charAt(0).toUpperCase() : "?"
+            )}
           </div>
-          {rating && <p className="text-xs text-indigo-950/50">{rating.avg.toFixed(1)} stars ({rating.count} reviews)</p>}
+          <div>
+            <h1 className="font-display font-bold text-xl">{artisan.name}</h1>
+            <p className="text-gold-500 font-semibold text-sm">{artisan.artisan_skill}</p>
+            <p className="text-xs text-parchment/70 mt-1">{artisan.years_experience || 0} years experience</p>
+            <p className="text-xs text-parchment/70">{artisan.service_area || "Osogbo"}</p>
+            <div className="flex items-center gap-1 mt-1">
+              <span className={"w-2 h-2 rounded-full " + (online ? "bg-green-500" : "bg-parchment/30")} />
+              <span className="text-xs text-parchment/70">{online ? "Online now" : "Offline"}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10 text-xs text-parchment/60">
+          <span>Member since {new Date(artisan.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}</span>
+          {rating && <span className="text-gold-500 font-semibold">{rating.avg.toFixed(1)} stars ({rating.count})</span>}
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2">
         {artisan.phone_number && (
           <a href={"tel:" + artisan.phone_number} className="flex-1 bg-indigo-950 text-parchment font-semibold rounded px-4 py-2 text-center text-sm">Call</a>
         )}
@@ -137,18 +149,16 @@ export default function ArtisanProfilePage() {
         )}
       </div>
 
-      {artisan.bio && <p className="text-sm text-indigo-950/70 mb-4">{artisan.bio}</p>}
-
-      {artisan.work_video_url && (
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-indigo-950/60 mb-1">Video of their work</p>
-          <video controls className="w-full rounded-lg bg-black" src={artisan.work_video_url} />
+      {artisan.bio && (
+        <div className="bg-white border border-indigo-950/10 rounded-lg p-4">
+          <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-1">About</p>
+          <p className="text-sm text-indigo-950/80">{artisan.bio}</p>
         </div>
       )}
 
       {artisan.work_photos && artisan.work_photos.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-indigo-950/60 mb-1">Photos of their work</p>
+        <div className="bg-white border border-indigo-950/10 rounded-lg p-4">
+          <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Samples of their work</p>
           <div className="grid grid-cols-3 gap-2">
             {artisan.work_photos.map(function (url, i) {
               return (
@@ -157,6 +167,13 @@ export default function ArtisanProfilePage() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {artisan.work_video_url && (
+        <div className="bg-white border border-indigo-950/10 rounded-lg p-4">
+          <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Video of their work</p>
+          <video controls className="w-full rounded-lg bg-black" src={artisan.work_video_url} />
         </div>
       )}
 

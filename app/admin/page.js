@@ -85,7 +85,10 @@ export default function AdminPage() {
         <div className="space-y-2">
           {users.map((u) => (
             <div key={u.id} className="flex items-center justify-between bg-white border border-indigo-950/10 rounded p-3 text-sm">
-              <span>{u.name} {u.is_banned && "(banned)"}</span>
+             <span>
+                  <span className={"inline-block w-2 h-2 rounded-full mr-1 " + (u.last_seen && (Date.now() - new Date(u.last_seen).getTime() < 3 * 60 * 1000) ? "bg-green-500" : "bg-indigo-950/20")} />
+                  {u.name} {u.is_banned && "(banned)"}
+                </span>
               <button onClick={() => toggleBan(u.id, u.is_banned)} className="text-xs underline">{u.is_banned ? "Unban" : "Ban"}</button>
             </div>
           ))}
