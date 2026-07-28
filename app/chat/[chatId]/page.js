@@ -4,6 +4,21 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import { isOnline } from "../../../lib/presence";
 
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.frequency.value = 700;
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.3);
+  } catch (err) {}
+}
+
 export default function ChatPage() {
   const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
@@ -32,7 +47,7 @@ export default function ChatPage() {
       setChatInfo(chatData);
 
       if (chatData) {
-      const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatData.buyer_id).single();
+        const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatData.buyer_id).single();
         const { data: sellerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatData.seller_id).single();
         setBuyerProfile(buyerData);
         setSellerProfile(sellerData);
@@ -55,6 +70,9 @@ export default function ChatPage() {
         .channel("chat-" + chatId)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "chat_id=eq." + chatId }, function (payload) {
           setMessages(function (prev) { return prev.concat([payload.new]); });
+          if (payload.new.sender_id !== userData?.user?.id) {
+            playNotificationSound();
+          }
         })
         .subscribe();
     }
@@ -66,6 +84,17 @@ export default function ChatPage() {
       if (channel) supabase.removeChannel(channel);
     };
   }, [chatId]);
+
+  useEffect(() => {
+    if (!chatInfo) return;
+    const interval = setInterval(async function () {
+      const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatInfo.buyer_id).single();
+      const { data: sellerData } = await supabase.from("users").select("name, avatar_url, last_seen, is_artisan").eq("id", chatInfo.seller_id).single();
+      setBuyerProfile(buyerData);
+      setSellerProfile(sellerData);
+    }, 20000);
+    return function () { clearInterval(interval); };
+  }, [chatInfo]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -83,8 +112,8 @@ export default function ChatPage() {
     await supabase.from("messages").insert({ chat_id: chatId, sender_id: userId, text: text.trim() });
 
     const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
+    const isJobChat = !chatInfo.listing_id;
 
-  const isJobChat = !chatInfo.listing_id;
     await supabase.from("notifications").insert({
       user_id: recipientId,
       type: isJobChat ? "job" : "message",
@@ -92,7 +121,7 @@ export default function ChatPage() {
       link: "/chat/" + chatId,
     });
 
-    const { data: recipient } = await supabase.from("users").select("onesignal_player_id, email").eq("id", recipientId).single();
+    const { data: recipient } = await supabase.from("users").select("onesignal_player_id, email, chats_disabled").eq("id", recipientId).single();
     const { data: listingData } = chatInfo.listing_id
       ? await supabase.from("listings").select("title").eq("id", chatInfo.listing_id).single()
       : { data: null };
@@ -111,7 +140,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           toEmail: recipient.email,
-        listingTitle: listingData?.title || "a job opportunity",
+          listingTitle: listingData?.title || "a job opportunity",
           messageText: text.trim(),
           chatUrl: window.location.origin + "/chat/" + chatId,
         }),
@@ -165,14 +194,18 @@ export default function ChatPage() {
   const otherUserId = chatInfo ? (userId === chatInfo.buyer_id ? chatInfo.seller_id : chatInfo.buyer_id) : null;
   const otherProfileLink = otherProfile?.is_artisan ? "/artisans/" + otherUserId : "/seller/" + otherUserId;
 
+  const openingSuggestions = ["Hi, is this still available?", "Can you tell me more about this?", "Is the price negotiable?"];
+  const showOpeningSuggestions = chatInfo && chatInfo.listing_id && messages.length === 0 && userId === chatInfo.buyer_id;
+
   return (
     <div className="max-w-lg mx-auto flex flex-col">
-    {otherProfile && (
+      {otherProfile && (
         <a href={otherProfileLink} className="flex items-center gap-2 mb-2 text-sm text-indigo-950 hover:underline">
           <span className={"w-2 h-2 rounded-full " + (isOnline(otherProfile.last_seen) ? "bg-green-500" : "bg-indigo-950/20")} />
           {otherProfile.name} - {isOnline(otherProfile.last_seen) ? "Online" : "Offline"} - View profile
         </a>
       )}
+
       <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-white rounded-lg border border-indigo-950/10 h-[60vh]">
         {messages.map(function (m) {
           const isMine = m.sender_id === userId;
@@ -196,6 +229,18 @@ export default function ChatPage() {
         })}
         <div ref={bottomRef} />
       </div>
+
+      {showOpeningSuggestions && (
+        <div className="flex gap-2 flex-wrap mt-2">
+          {openingSuggestions.map(function (s, i) {
+            return (
+              <button key={i} type="button" onClick={() => setText(s)} className="text-xs bg-indigo-950/5 text-indigo-950 rounded-full px-3 py-1">
+                {s}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <button onClick={getSuggestions} type="button" className="text-xs text-indigo-950/60 underline mt-2 self-start">
         AI: Suggest replies

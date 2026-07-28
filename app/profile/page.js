@@ -4,6 +4,15 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
 import ListingCard from "../../components/ListingCard";
+import { isOnline } from "../../lib/presence";
+
+function hueFromId(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % 360;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -15,6 +24,7 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState(null);
 
   const [isArtisan, setIsArtisan] = useState(false);
+  const [editingArtisan, setEditingArtisan] = useState(false);
   const [artisanSkill, setArtisanSkill] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
   const [bio, setBio] = useState("");
@@ -150,15 +160,17 @@ export default function ProfilePage() {
     setNewWorkVideoFile(null);
     setSavingArtisan(false);
     setHasArtisanProfile(true);
+    setEditingArtisan(false);
+    load();
     alert("Artisan profile saved.");
   }
 
   async function removeArtisanProfile() {
-    if (!confirm("Remove your artisan profile? People will no longer find you in artisan search. Your account and listings stay untouched.")) return;
+    if (!confirm("Remove your artisan profile? People will no longer find you in artisan search.")) return;
     await supabase.from("users").update({ is_artisan: false }).eq("id", userId);
     setIsArtisan(false);
     setHasArtisanProfile(false);
-    alert("Artisan profile removed.");
+    setEditingArtisan(false);
   }
 
   async function markSold(id) {
@@ -171,12 +183,10 @@ export default function ProfilePage() {
     load();
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    router.push("/");
-  }
-
   if (loading) return <p className="text-sm text-indigo-950/50">Loading...</p>;
+
+  const online = isOnline(profile?.last_seen);
+  const cardHue = userId ? hueFromId(userId) : 220;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -204,91 +214,154 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
-        <button onClick={logout} className="text-sm text-indigo-950/60 underline shrink-0">Log out</button>
+        <button onClick={() => router.push("/settings")} className="text-2xl text-indigo-950/60 shrink-0" title="Settings">
+          {"\u2699"}
+        </button>
       </div>
 
-      <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mb-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-indigo-950 mb-3">
-          <input type="checkbox" checked={isArtisan} onChange={(e) => setIsArtisan(e.target.checked)} />
-          I offer a skilled service (plumbing, electrical, tailoring, etc.)
-        </label>
-
-        {isArtisan && (
-          <div className="space-y-3">
-            {!profile?.avatar_url && (
-              <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded p-3">
-                <p className="text-xs text-red-600">A clear profile picture is required for your artisan card.</p>
-                <label className="bg-red-600 text-white text-xs font-semibold rounded px-3 py-1.5 cursor-pointer shrink-0 ml-2">
-                  {uploading ? "..." : "Add Profile Picture"}
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
-                </label>
+      {hasArtisanProfile && !editingArtisan && (
+        <div className="mb-6">
+          <div
+            className="rounded-xl p-5 text-parchment shadow-lg"
+            style={{ background: "linear-gradient(135deg, hsl(" + cardHue + ", 45%, 22%), #151C33)" }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icon-512.png" alt="" className="w-6 h-6 rounded" />
+              <span className="text-xs font-bold tracking-widest uppercase text-gold-500">OshogboMarket Verified Card</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-lg bg-white/10 overflow-hidden flex items-center justify-center font-bold text-3xl shrink-0 border-2 border-gold-500">
+                {profile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  profile?.name ? profile.name.charAt(0).toUpperCase() : "?"
+                )}
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-xl">{profile?.name}</h2>
+                <p className="text-gold-500 font-semibold text-sm">{artisanSkill}</p>
+                <p className="text-xs text-parchment/70 mt-1">{yearsExperience || 0} years experience</p>
+                <p className="text-xs text-parchment/70">{artisanArea || "Osogbo"}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={"w-2 h-2 rounded-full " + (online ? "bg-green-500" : "bg-parchment/30")} />
+                  <span className="text-xs text-parchment/70">{online ? "Online now" : "Offline"}</span>
+                </div>
+              </div>
+            </div>
+            {artisanRating && (
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10 text-xs text-parchment/60">
+                <span>Your rating</span>
+                <span className="text-gold-500 font-semibold">{artisanRating.avg.toFixed(1)} stars ({artisanRating.count})</span>
               </div>
             )}
+          </div>
 
-            <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
-              <option value="">Select your main skill</option>
-              {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
-            </select>
+          {bio && (
+            <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mt-3">
+              <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-1">About</p>
+              <p className="text-sm text-indigo-950/80">{bio}</p>
+            </div>
+          )}
 
-            <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-            <datalist id="profile-area-suggestions">
-              {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-            </datalist>
-
-            <input type="tel" placeholder="Call number (e.g. 08012345678)" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-            <input type="tel" placeholder="WhatsApp number (e.g. 08012345678)" value={artisanWhatsapp} onChange={(e) => setArtisanWhatsapp(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-
-            <input type="number" placeholder="Years of experience" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-
-            <textarea placeholder="Short bio - describe your work, tools, or specialty" value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-
-            <div>
-              <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Photos of your work</label>
-              <div className="flex flex-wrap gap-2 mb-2">
+          {workPhotos.length > 0 && (
+            <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mt-3">
+              <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Samples of your work</p>
+              <div className="grid grid-cols-3 gap-2">
                 {workPhotos.map(function (url, i) {
                   return (
-                    <button key={i} type="button" onClick={() => removeWorkPhoto(url)} className="relative w-16 h-16 rounded overflow-hidden border border-indigo-950/20">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <span className="absolute inset-0 bg-red-600/60 text-white text-xs flex items-center justify-center opacity-0 hover:opacity-100">Remove</span>
-                    </button>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded" />
                   );
                 })}
               </div>
-              <input type="file" accept="image/*" multiple onChange={(e) => setNewWorkPhotoFiles(Array.from(e.target.files))} className="w-full text-sm" />
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Video of your work (optional, max 50MB)</label>
-              {workVideoUrl && (
-                <video controls className="w-full rounded mb-2 bg-black" src={workVideoUrl} />
-              )}
-              <input type="file" accept="video/*" onChange={handleWorkVideoChange} className="w-full text-sm" />
-              {newWorkVideoFile && <p className="text-xs text-indigo-950/50 mt-1">{newWorkVideoFile.name} selected</p>}
+          {workVideoUrl && (
+            <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mt-3">
+              <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Video of your work</p>
+              <video controls className="w-full rounded-lg bg-black" src={workVideoUrl} />
             </div>
+          )}
 
-            {artisanRating && (
-              <p className="text-xs text-indigo-950/60">{artisanRating.avg.toFixed(1)} out of 5 stars ({artisanRating.count} rating{artisanRating.count === 1 ? "" : "s"})</p>
-            )}
+          <div className="flex gap-2 mt-3">
+            <button onClick={() => setEditingArtisan(true)} className="flex-1 bg-indigo-950 text-parchment font-semibold rounded px-3 py-2 text-sm">Edit artisan details</button>
+            <button onClick={removeArtisanProfile} className="bg-red-600 text-white font-semibold rounded px-3 py-2 text-sm">Remove</button>
+          </div>
+        </div>
+      )}
 
-            <div className="flex gap-2">
-              <button onClick={saveArtisanProfile} disabled={savingArtisan} className="flex-1 bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm disabled:opacity-50">
-                {savingArtisan ? "Saving..." : hasArtisanProfile ? "Save changes" : "Create artisan profile"}
-              </button>
-              {hasArtisanProfile && (
-                <button onClick={removeArtisanProfile} className="bg-red-600 text-white font-semibold rounded px-3 py-2 text-sm">
-                  Remove profile
-                </button>
-              )}
+      {!hasArtisanProfile && (
+        <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mb-6">
+          <label className="flex items-center gap-2 text-sm font-semibold text-indigo-950 mb-3">
+            <input type="checkbox" checked={isArtisan} onChange={(e) => { setIsArtisan(e.target.checked); setEditingArtisan(e.target.checked); }} />
+            I offer a skilled service (plumbing, electrical, tailoring, etc.)
+          </label>
+        </div>
+      )}
+
+      {(editingArtisan || (isArtisan && !hasArtisanProfile)) && (
+        <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mb-6 space-y-3">
+          {!profile?.avatar_url && (
+            <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded p-3">
+              <p className="text-xs text-red-600">A clear profile picture is required for your artisan card.</p>
+              <label className="bg-red-600 text-white text-xs font-semibold rounded px-3 py-1.5 cursor-pointer shrink-0 ml-2">
+                {uploading ? "..." : "Add Profile Picture"}
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+              </label>
             </div>
+          )}
+
+          <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
+            <option value="">Select your main skill</option>
+            {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
+          </select>
+
+          <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+          <datalist id="profile-area-suggestions">
+            {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
+          </datalist>
+
+          <input type="tel" placeholder="Call number (e.g. 08012345678)" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+          <input type="tel" placeholder="WhatsApp number (e.g. 08012345678)" value={artisanWhatsapp} onChange={(e) => setArtisanWhatsapp(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+          <input type="number" placeholder="Years of experience" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+          <textarea placeholder="Short bio - describe your work, tools, or specialty" value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Photos of your work</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {workPhotos.map(function (url, i) {
+                return (
+                  <button key={i} type="button" onClick={() => removeWorkPhoto(url)} className="relative w-16 h-16 rounded overflow-hidden border border-indigo-950/20">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 bg-red-600/60 text-white text-xs flex items-center justify-center opacity-0 hover:opacity-100">Remove</span>
+                  </button>
+                );
+              })}
+            </div>
+            <input type="file" accept="image/*" multiple onChange={(e) => setNewWorkPhotoFiles(Array.from(e.target.files))} className="w-full text-sm" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Video of your work (optional, max 50MB)</label>
+            {workVideoUrl && <video controls className="w-full rounded mb-2 bg-black" src={workVideoUrl} />}
+            <input type="file" accept="video/*" onChange={handleWorkVideoChange} className="w-full text-sm" />
+            {newWorkVideoFile && <p className="text-xs text-indigo-950/50 mt-1">{newWorkVideoFile.name} selected</p>}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={saveArtisanProfile} disabled={savingArtisan} className="flex-1 bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 text-sm disabled:opacity-50">
+              {savingArtisan ? "Saving..." : hasArtisanProfile ? "Save changes" : "Create artisan profile"}
+            </button>
             {hasArtisanProfile && (
-              <a href={"/artisans/" + userId} target="_blank" rel="noopener noreferrer" className="block text-xs underline text-indigo-900 text-center">
-                Preview my public artisan card
-              </a>
+              <button onClick={() => setEditingArtisan(false)} className="bg-white border border-indigo-950/20 text-indigo-950 font-semibold rounded px-3 py-2 text-sm">Cancel</button>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <h2 className="font-display font-bold text-indigo-950 mb-2">My listings</h2>
       {myListings.length === 0 ? (
