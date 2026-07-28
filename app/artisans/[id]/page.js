@@ -165,4 +165,10 @@ export default function ArtisanProfilePage() {
         <input type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input type="text" placeholder="Address/location in Osogbo" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <textarea placeholder="Describe the job you need done" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
-        <button type="submit" disabled={booking} className="w-full bg-indigo-950 text-parchment font-semibold rounded px-3 py-2
+        <button type="submit" disabled={booking} className="w-full bg-indigo-950 text-parchment font-semibold rounded px-3 py-2 disabled:opacity-50">
+          {booking ? "Sending request..." : "Send booking request"}
+        </button>
+      </form>
+    </div>
+  );
+}
