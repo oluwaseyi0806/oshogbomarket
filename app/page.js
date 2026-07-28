@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { OSOGBO_AREAS, CATEGORIES, CATEGORY_ICONS } from "../lib/osogboAreas";
 import ListingCard from "../components/ListingCard";
+import Link from "next/link";
 
 export default function HomePage() {
   const [listings, setListings] = useState([]);
@@ -46,6 +47,13 @@ export default function HomePage() {
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
+        <button
+          onClick={() => setCategoryFilter("")}
+          className={"flex flex-col items-center gap-1 min-w-[64px] " + (categoryFilter === "" ? "opacity-100" : "opacity-60")}
+        >
+          <div className="w-12 h-12 rounded-full bg-indigo-950 flex items-center justify-center text-xl">All</div>
+          <span className="text-xs text-indigo-950/70">All</span>
+        </button>
         <button
           onClick={() => setCategoryFilter("")}
           className={"flex flex-col items-center gap-1 min-w-[64px] " + (categoryFilter === "" ? "opacity-100" : "opacity-60")}

@@ -14,6 +14,7 @@ export default function ChatPage() {
   const [existingRating, setExistingRating] = useState(null);
   const [selectedStars, setSelectedStars] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -45,13 +46,9 @@ export default function ChatPage() {
       if (!isMounted) return;
       setMessages(data || []);
 
-      const { error: readError } = await supabase
-        .from("messages")
-        .update({ read: true })
-        .eq("chat_id", chatId)
-        .eq("read", false)
-        .neq("sender_id", userData.user.id);
-      if (readError) console.error("mark read error:", readError);
+      if (userData?.user) {
+        await supabase.from("messages").update({ read: true }).eq("chat_id", chatId).eq("read", false).neq("sender_id", userData.user.id);
+      }
 
       channel = supabase
         .channel("chat-" + chatId)
@@ -78,29 +75,25 @@ export default function ChatPage() {
     return senderId === chatInfo.buyer_id ? buyerProfile : sellerProfile;
   }
 
-  async function blockThisUser() {
-    if (!chatInfo || !userId) return;
-    const otherUserId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
-    if (!confirm("Block this user? You will no longer see messages from them.")) return;
-    await supabase.from("blocks").insert({ blocker_id: userId, blocked_id: otherUserId });
-    alert("User blocked.");
-  }
-
   async function sendMessage(e) {
     e.preventDefault();
     if (!text.trim() || !chatInfo) return;
 
     await supabase.from("messages").insert({ chat_id: chatId, sender_id: userId, text: text.trim() });
+
+    const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
+
     await supabase.from("notifications").insert({
       user_id: recipientId,
       type: "message",
-      message: "New message about " + (chatInfo.listing_id ? "your listing" : "a listing"),
+      message: "New message on OshogboMarket",
       link: "/chat/" + chatId,
     });
 
-    const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
     const { data: recipient } = await supabase.from("users").select("onesignal_player_id, email").eq("id", recipientId).single();
-    const { data: listingData } = await supabase.from("listings").select("title").eq("id", chatInfo.listing_id).single();
+    const { data: listingData } = chatInfo.listing_id
+      ? await supabase.from("listings").select("title").eq("id", chatInfo.listing_id).single()
+      : { data: null };
 
     if (recipient?.onesignal_player_id) {
       fetch("/api/notify", {
@@ -116,7 +109,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           toEmail: recipient.email,
-          listingTitle: listingData?.title || "a listing",
+          listingTitle: listingData?.title || "your booking",
           messageText: text.trim(),
           chatUrl: window.location.origin + "/chat/" + chatId,
         }),
@@ -124,6 +117,22 @@ export default function ChatPage() {
     }
 
     setText("");
+  }
+
+  async function getSuggestions() {
+    const lastOther = messages.slice().reverse().find(function (m) { return m.sender_id !== userId; });
+    if (!lastOther) return;
+    try {
+      const response = await fetch("/api/ai/chat-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lastMessage: lastOther.text }),
+      });
+      const data = await response.json();
+      setSuggestions(data.suggestions || []);
+    } catch (err) {
+      setSuggestions([]);
+    }
   }
 
   async function submitRating() {
@@ -140,16 +149,13 @@ export default function ChatPage() {
       setExistingRating({ stars: selectedStars, comment: ratingComment });
     }
   }
-  async function getSuggestions() {
-    const lastOther = messages.slice().reverse().find(function (m) { return m.sender_id !== userId; });
-    if (!lastOther) return;
-    const response = await fetch("/api/ai/chat-suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lastMessage: lastOther.text }),
-    });
-    const data = await response.json();
-    setSuggestions(data.suggestions || []);
+
+  async function blockThisUser() {
+    if (!chatInfo || !userId) return;
+    const otherUserId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
+    if (!confirm("Block this user? You will no longer see messages from them.")) return;
+    await supabase.from("blocks").insert({ blocker_id: userId, blocked_id: otherUserId });
+    alert("User blocked.");
   }
 
   const otherPersonLabel = chatInfo && userId === chatInfo.buyer_id ? "the seller" : "the buyer";
@@ -178,8 +184,8 @@ export default function ChatPage() {
           );
         })}
         <div ref={bottomRef} />
-        <button onClick={blockThisUser} className="mt-3 text-xs text-red-600 underline">Block this user</button>
       </div>
+
       <button onClick={getSuggestions} type="button" className="text-xs text-indigo-950/60 underline mt-2 self-start">
         AI: Suggest replies
       </button>
@@ -194,7 +200,8 @@ export default function ChatPage() {
           })}
         </div>
       )}
-      <form onSubmit={sendMessage} className="flex gap-2 mt-3">
+
+      <form onSubmit={sendMessage} className="flex gap-2 mt-2">
         <input type="text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." className="flex-1 border border-indigo-950/20 rounded px-3 py-2" />
         <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2">Send</button>
       </form>
@@ -217,6 +224,8 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      <button onClick={blockThisUser} className="mt-3 text-xs text-red-600 underline self-start">Block this user</button>
     </div>
   );
 }

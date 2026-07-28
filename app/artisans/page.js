@@ -1,0 +1,77 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { supabase } from "../../lib/supabaseClient";
+import { ARTISAN_SKILLS } from "../../lib/osogboAreas";
+
+export default function ArtisansPage() {
+  const [artisans, setArtisans] = useState([]);
+  const [skillFilter, setSkillFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    load();
+  }, [skillFilter]);
+
+  async function load() {
+    setLoading(true);
+    let query = supabase.from("users").select("*").eq("is_artisan", true);
+    if (skillFilter) query = query.eq("artisan_skill", skillFilter);
+    const { data } = await query;
+
+    const withRatings = [];
+    for (const artisan of data || []) {
+      const { data: ratingsData } = await supabase.from("ratings").select("stars").eq("rated_user_id", artisan.id);
+      let rating = null;
+      if (ratingsData && ratingsData.length > 0) {
+        const avg = ratingsData.reduce(function (sum, r) { return sum + r.stars; }, 0) / ratingsData.length;
+        rating = { avg: avg, count: ratingsData.length };
+      }
+      withRatings.push(Object.assign({}, artisan, { rating: rating }));
+    }
+    setArtisans(withRatings);
+    setLoading(false);
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">Find a skilled artisan in Osogbo</h1>
+      <p className="text-sm text-indigo-950/60 mb-4">Plumbers, electricians, painters, and more.</p>
+
+      <select value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4">
+        <option value="">All skills</option>
+        {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
+      </select>
+
+      {loading ? (
+        <p className="text-sm text-indigo-950/50">Loading...</p>
+      ) : artisans.length === 0 ? (
+        <p className="text-sm text-indigo-950/50">No artisans found for this skill yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {artisans.map(function (artisan) {
+            return (
+              <Link key={artisan.id} href={"/artisans/" + artisan.id} className="flex items-center gap-3 bg-white border border-indigo-950/10 rounded-lg p-3 hover:shadow-md">
+                <div className="w-12 h-12 rounded-full bg-indigo-950/10 overflow-hidden shrink-0 flex items-center justify-center font-bold text-indigo-950">
+                  {artisan.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={artisan.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    artisan.name ? artisan.name.charAt(0).toUpperCase() : "?"
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-indigo-950">{artisan.name}</p>
+                  <p className="text-sm text-indigo-950/60">{artisan.artisan_skill} - {artisan.years_experience || 0} years experience</p>
+                  {artisan.rating && (
+                    <p className="text-xs text-indigo-950/50">{artisan.rating.avg.toFixed(1)} stars ({artisan.rating.count} reviews)</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
