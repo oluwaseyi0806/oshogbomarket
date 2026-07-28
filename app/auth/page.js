@@ -6,7 +6,8 @@ import { supabase } from "../../lib/supabaseClient";
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState(null);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
@@ -37,7 +38,8 @@ export default function AuthPage() {
       return;
     }
     if (data.user) {
-     await supabase.from("users").upsert({ id: data.user.id, name: name || "Osogbo user", email: email });
+     const fullName = (firstName.trim() + " " + lastName.trim()).trim() || "Osogbo user";
+      await supabase.from("users").upsert({ id: data.user.id, name: fullName, first_name: firstName.trim(), last_name: lastName.trim(), email: email });
     }
     setLoading(false);
     router.push("/");
@@ -139,8 +141,11 @@ export default function AuthPage() {
       {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
 
       <div className="space-y-3">
-        {mode === "signup" && (
-          <input type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+      {mode === "signup" && (
+          <div className="flex gap-2">
+            <input type="text" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-1/2 border border-indigo-950/20 rounded px-3 py-2" />
+            <input type="text" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-1/2 border border-indigo-950/20 rounded px-3 py-2" />
+          </div>
         )}
         <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input type="password" placeholder="Password (minimum 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />

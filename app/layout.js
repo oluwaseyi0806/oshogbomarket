@@ -4,7 +4,9 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BottomNav from "../components/BottomNav";
 import OneSignalInit from "../components/OneSignalInit";
+import PresenceTracker from "../components/PresenceTracker";
 import SupportWidget from "../components/SupportWidget";
+
 
 export const metadata = {
   title: "OshogboMarket - Buy and sell in Osogbo",

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
+import { isOnline } from "../../../lib/presence";
 
 export default function ArtisanProfilePage() {
   const { id } = useParams();
@@ -58,10 +59,12 @@ export default function ArtisanProfilePage() {
       notes: notes,
     });
 
+    const messageText = "Job opportunity: " + artisan.artisan_skill + (preferredDate ? " on " + preferredDate : "") + (address ? " at " + address : "") + (notes ? ". Notes: " + notes : "");
+
     await supabase.from("messages").insert({
       chat_id: newChat.id,
       sender_id: userData.user.id,
-      text: "Job opportunity: " + artisan.artisan_skill + (preferredDate ? " on " + preferredDate : "") + (address ? " at " + address : "") + (notes ? ". Notes: " + notes : ""),
+      text: messageText,
     });
 
     await supabase.from("notifications").insert({
@@ -70,6 +73,31 @@ export default function ArtisanProfilePage() {
       message: "New job opportunity: " + artisan.artisan_skill,
       link: "/chat/" + newChat.id,
     });
+
+    if (artisan.onesignal_player_id) {
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerId: artisan.onesignal_player_id,
+          title: "New job opportunity on OshogboMarket",
+          message: messageText,
+        }),
+      });
+    }
+
+    if (artisan.email) {
+      fetch("/api/notify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toEmail: artisan.email,
+          listingTitle: "a job opportunity",
+          messageText: messageText,
+          chatUrl: window.location.origin + "/chat/" + newChat.id,
+        }),
+      });
+    }
 
     setBooking(false);
     router.push("/chat/" + newChat.id);
@@ -92,6 +120,10 @@ export default function ArtisanProfilePage() {
           <h1 className="font-display font-bold text-xl text-indigo-950">{artisan.name}</h1>
           <p className="text-sm text-indigo-950/60">{artisan.artisan_skill} - {artisan.years_experience || 0} years experience</p>
           <p className="text-xs text-indigo-950/50">Location: {artisan.service_area || "Osogbo"}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className={"w-2 h-2 rounded-full " + (isOnline(artisan.last_seen) ? "bg-green-500" : "bg-indigo-950/20")} />
+            <span className="text-xs text-indigo-950/50">{isOnline(artisan.last_seen) ? "Online" : "Offline"}</span>
+          </div>
           {rating && <p className="text-xs text-indigo-950/50">{rating.avg.toFixed(1)} stars ({rating.count} reviews)</p>}
         </div>
       </div>
@@ -133,10 +165,4 @@ export default function ArtisanProfilePage() {
         <input type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input type="text" placeholder="Address/location in Osogbo" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <textarea placeholder="Describe the job you need done" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
-        <button type="submit" disabled={booking} className="w-full bg-indigo-950 text-parchment font-semibold rounded px-3 py-2 disabled:opacity-50">
-          {booking ? "Sending request..." : "Send booking request"}
-        </button>
-      </form>
-    </div>
-  );
-}
+        <button type="submit" disabled={booking} className="w-full bg-indigo-950 text-parchment font-semibold rounded px-3 py-2

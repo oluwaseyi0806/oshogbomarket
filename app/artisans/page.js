@@ -52,8 +52,12 @@ function ArtisansContent() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">Find a skilled worker in Osogbo</h1>
-      <p className="text-sm text-indigo-950/60 mb-4">Plumbers, electricians, painters, tutors, and more.</p>
+     <h1 className="font-display font-bold text-2xl text-indigo-950 mb-1">
+        {searchTerm ? "Results for \"" + searchTerm + "\"" : "Find a skilled worker in Osogbo"}
+      </h1>
+      <p className="text-sm text-indigo-950/60 mb-4">
+        {loading ? "Searching..." : artisans.length + " artisan" + (artisans.length === 1 ? "" : "s") + " found" + (locationSearch ? " near " + locationSearch : "")}
+      </p>
 
       <input
         type="text"

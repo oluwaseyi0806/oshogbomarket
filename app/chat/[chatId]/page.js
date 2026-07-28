@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
+import { isOnline } from "../../../lib/presence";
 
 export default function ChatPage() {
   const { chatId } = useParams();
@@ -31,8 +32,8 @@ export default function ChatPage() {
       setChatInfo(chatData);
 
       if (chatData) {
-        const { data: buyerData } = await supabase.from("users").select("name, avatar_url").eq("id", chatData.buyer_id).single();
-        const { data: sellerData } = await supabase.from("users").select("name, avatar_url").eq("id", chatData.seller_id).single();
+        const { data: buyerData } = await supabase.from("users").select("name, avatar_url, last_seen").eq("id", chatData.buyer_id).single();
+        const { data: sellerData } = await supabase.from("users").select("name, avatar_url, last_seen").eq("id", chatData.seller_id).single();
         setBuyerProfile(buyerData);
         setSellerProfile(sellerData);
       }
@@ -160,9 +161,16 @@ export default function ChatPage() {
   }
 
   const otherPersonLabel = chatInfo && userId === chatInfo.buyer_id ? "the seller" : "the buyer";
+  const otherProfile = chatInfo ? (userId === chatInfo.buyer_id ? sellerProfile : buyerProfile) : null;
 
   return (
     <div className="max-w-lg mx-auto flex flex-col">
+      {otherProfile && (
+        <div className="flex items-center gap-2 mb-2 text-sm text-indigo-950">
+          <span className={"w-2 h-2 rounded-full " + (isOnline(otherProfile.last_seen) ? "bg-green-500" : "bg-indigo-950/20")} />
+          {otherProfile.name} - {isOnline(otherProfile.last_seen) ? "Online" : "Offline"}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-white rounded-lg border border-indigo-950/10 h-[60vh]">
         {messages.map(function (m) {
           const isMine = m.sender_id === userId;

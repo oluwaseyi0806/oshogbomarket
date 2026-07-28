@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [isArtisan, setIsArtisan] = useState(false);
   const [artisanSkill, setArtisanSkill] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
-const [bio, setBio] = useState("");
+  const [bio, setBio] = useState("");
   const [artisanArea, setArtisanArea] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [artisanWhatsapp, setArtisanWhatsapp] = useState("");
@@ -98,6 +98,12 @@ const [bio, setBio] = useState("");
 
   async function saveArtisanProfile() {
     if (!userId) return;
+
+    if (!profile?.avatar_url) {
+      alert("Please upload a clear profile picture first (use the + button on your photo above) before saving your artisan profile.");
+      return;
+    }
+
     setSavingArtisan(true);
 
     let finalPhotos = workPhotos.slice();
@@ -120,7 +126,7 @@ const [bio, setBio] = useState("");
       }
     }
 
-await supabase.from("users").update({
+    await supabase.from("users").update({
       is_artisan: isArtisan,
       artisan_skill: artisanSkill,
       years_experience: yearsExperience ? Number(yearsExperience) : null,
@@ -131,7 +137,6 @@ await supabase.from("users").update({
       phone_number: phoneNumber,
       whatsapp_number: artisanWhatsapp,
     }).eq("id", userId);
-
 
     setWorkPhotos(finalPhotos);
     setWorkVideoUrl(finalVideoUrl);
@@ -195,12 +200,18 @@ await supabase.from("users").update({
 
         {isArtisan && (
           <div className="space-y-3">
+            {!profile?.avatar_url && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                A clear profile picture is required before you can save your artisan profile. Use the + button on your photo above to upload one.
+              </p>
+            )}
+
             <select value={artisanSkill} onChange={(e) => setArtisanSkill(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm">
               <option value="">Select your main skill</option>
               {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
             </select>
 
-           <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
+            <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
             <datalist id="profile-area-suggestions">
               {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
             </datalist>
