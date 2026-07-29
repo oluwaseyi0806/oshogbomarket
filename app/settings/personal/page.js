@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import { OSOGBO_AREAS } from "../../../lib/osogboAreas";
+import AutocompleteInput from "../../../components/AutocompleteInput";
 
 export default function PersonalDetailsPage() {
   const router = useRouter();
@@ -61,10 +62,13 @@ export default function PersonalDetailsPage() {
           <input type="text" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-1/2 border border-indigo-950/20 rounded px-3 py-2" />
         </div>
 
-        <input list="settings-location-suggestions" type="text" placeholder="Your location in Osogbo" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
-        <datalist id="settings-location-suggestions">
-          {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-        </datalist>
+       <AutocompleteInput
+          value={location}
+          onChange={setLocation}
+          options={OSOGBO_AREAS}
+          placeholder="Your location in Osogbo"
+          className="w-full border border-indigo-950/20 rounded px-3 py-2"
+        />
 
         <div>
           <label className="block text-xs text-indigo-950/60 mb-1">Date of birth</label>

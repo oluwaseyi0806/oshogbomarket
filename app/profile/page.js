@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
 import ListingCard from "../../components/ListingCard";
 import { isOnline } from "../../lib/presence";
+import AutocompleteInput from "../../components/AutocompleteInput";
 
 function hueFromId(id) {
   let hash = 0;
@@ -214,8 +215,8 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
-        <button onClick={() => router.push("/settings")} className="text-2xl text-indigo-950/60 shrink-0" title="Settings">
-          {"\u2699"}
+      <button onClick={() => router.push("/settings")} className="flex items-center gap-1 text-sm font-semibold text-indigo-950/70 shrink-0">
+          <span className="text-lg">{"\u2699"}</span> Settings
         </button>
       </div>
 
@@ -319,10 +320,13 @@ export default function ProfilePage() {
             {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
           </select>
 
-          <input list="profile-area-suggestions" type="text" placeholder="Your location in Osogbo" value={artisanArea} onChange={(e) => setArtisanArea(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
-          <datalist id="profile-area-suggestions">
-            {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-          </datalist>
+       <AutocompleteInput
+            value={artisanArea}
+            onChange={setArtisanArea}
+            options={OSOGBO_AREAS}
+            placeholder="Your location in Osogbo"
+            className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm"
+          />
 
           <input type="tel" placeholder="Call number (e.g. 08012345678)" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
           <input type="tel" placeholder="WhatsApp number (e.g. 08012345678)" value={artisanWhatsapp} onChange={(e) => setArtisanWhatsapp(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm" />
@@ -372,7 +376,8 @@ export default function ProfilePage() {
             return (
               <div key={listing.id}>
                 <ListingCard listing={listing} />
-                <div className="flex gap-2 mt-1 text-xs">
+       <div className="flex gap-2 mt-1 text-xs">
+                  <a href={"/listings/" + listing.id + "/edit"} className="underline text-indigo-900">Edit</a>
                   {listing.status === "active" && (
                     <button onClick={() => markSold(listing.id)} className="underline text-indigo-950/70">Mark sold</button>
                   )}

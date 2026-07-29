@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import { OSOGBO_AREAS, CATEGORIES, CATEGORY_ICONS, ARTISAN_SKILLS } from "../lib/osogboAreas";
 import ListingCard from "../components/ListingCard";
+import AutocompleteInput from "../components/AutocompleteInput";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -49,7 +50,6 @@ export default function HomePage() {
   async function fetchCategoryCounts() {
     const { count: total } = await supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "active");
     setTotalCount(total || 0);
-
     const counts = {};
     for (const c of CATEGORIES) {
       const { count } = await supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "active").eq("category", c);
@@ -81,31 +81,24 @@ export default function HomePage() {
         </div>
         <p className="text-sm text-parchment/70 mb-3">Find trusted plumbers, electricians, tailors, and more in Osogbo - or register your own skill so people can find you.</p>
         <form onSubmit={handleArtisanSearch} className="space-y-2 mb-2">
-          <input
-            list="skill-suggestions"
-            type="text"
-            placeholder="What service do you need? e.g. plumber"
+          <AutocompleteInput
             value={artisanSearchTerm}
-            onChange={(e) => setArtisanSearchTerm(e.target.value)}
-            className="w-full border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm"
+            onChange={setArtisanSearchTerm}
+            options={ARTISAN_SKILLS}
+            placeholder="What service do you need? e.g. plumber"
+            className="w-full border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm text-parchment"
           />
-          <datalist id="skill-suggestions">
-            {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s} />); })}
-          </datalist>
-
           <div className="flex gap-2">
-            <input
-              list="location-suggestions"
-              type="text"
-              placeholder="Location in Osogbo (optional)"
-              value={artisanLocation}
-              onChange={(e) => setArtisanLocation(e.target.value)}
-              className="flex-1 border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm"
-            />
-            <datalist id="location-suggestions">
-              {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-            </datalist>
-            <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2 text-sm">Search</button>
+            <div className="flex-1">
+              <AutocompleteInput
+                value={artisanLocation}
+                onChange={setArtisanLocation}
+                options={OSOGBO_AREAS}
+                placeholder="Location in Osogbo (optional)"
+                className="w-full border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm text-parchment"
+              />
+            </div>
+            <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2 text-sm shrink-0">Search</button>
           </div>
         </form>
         <Link href="/profile" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
@@ -161,18 +154,15 @@ export default function HomePage() {
           <option value="sell">For sale</option>
           <option value="buy_request">Wanted</option>
         </select>
-        <input
-          list="area-filter-suggestions"
-          type="text"
-          placeholder="Search location..."
-          value={areaFilter}
-          onChange={(e) => setAreaFilter(e.target.value)}
-          className="border border-indigo-950/20 rounded px-3 py-2 text-sm bg-white"
-        />
-        <datalist id="area-filter-suggestions">
-          <option value="" />
-          {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-        </datalist>
+        <div className="w-48">
+          <AutocompleteInput
+            value={areaFilter}
+            onChange={setAreaFilter}
+            options={OSOGBO_AREAS}
+            placeholder="Search location..."
+            className="w-full border border-indigo-950/20 rounded px-3 py-2 text-sm bg-white"
+          />
+        </div>
       </div>
 
       {loading ? (

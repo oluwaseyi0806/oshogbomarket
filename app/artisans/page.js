@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
+import AutocompleteInput from "../../components/AutocompleteInput";
 
 function ArtisansContent() {
   const searchParams = useSearchParams();
@@ -78,17 +79,13 @@ const [locationSearch, setLocationSearch] = useState("");
             <option value="">All skills</option>
             {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
           </select>
-          <input
-            list="artisan-location-suggestions"
-            type="text"
-            placeholder="Search by location in Osogbo..."
-            value={locationSearch}
-            onChange={(e) => setLocationSearch(e.target.value)}
-            className="w-full border border-indigo-950/20 rounded px-3 py-2"
-          />
-          <datalist id="artisan-location-suggestions">
-            {OSOGBO_AREAS.map(function (a) { return (<option key={a} value={a} />); })}
-          </datalist>
+  <AutocompleteInput
+        value={locationSearch}
+        onChange={setLocationSearch}
+        options={OSOGBO_AREAS}
+        placeholder="Search by location in Osogbo..."
+        className="w-full border border-indigo-950/20 rounded px-3 py-2 mb-4"
+      />
           <button onClick={() => setShowFilters(false)} className="text-xs underline text-indigo-950/50">Hide filters</button>
         </div>
       )}
