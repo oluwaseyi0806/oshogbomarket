@@ -9,7 +9,7 @@ export default function LiveListingsMarquee({ listings }) {
     <div className="mb-6 overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-        <p className="text-xs font-bold uppercase tracking-wide text-indigo-950/60">Live in Osogbo now</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-indigo-950/60">Recent Posts</p>
       </div>
       <div className="flex gap-3 marquee-track">
         {doubled.map(function (listing, i) {

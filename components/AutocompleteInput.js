@@ -32,7 +32,7 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
 
   return (
     <div className="relative">
-      <input
+<input
         type="text"
         value={value}
         onChange={handleChange}
@@ -40,6 +40,7 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
         onBlur={handleBlur}
         placeholder={placeholder}
         className={className}
+        style={{ color: "#151C33", backgroundColor: "#FFFFFF" }}
       />
       {showDropdown && filtered.length > 0 && (
         <div className="absolute z-50 top-full left-0 right-0 bg-white border border-indigo-950/20 rounded mt-1 max-h-48 overflow-y-auto shadow-lg">

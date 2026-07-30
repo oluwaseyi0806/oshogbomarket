@@ -193,7 +193,7 @@ export default function NewListingPage() {
       type,
       title,
       description,
-      price: Number(price),
+      price: Number(String(price).replace(/[^0-9.]/g, "")),
       category,
       custom_category: category === "Other" ? customCategory : null,
       location_area: area,

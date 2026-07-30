@@ -120,7 +120,7 @@ export default function AuthPage() {
         {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
         {successMsg && <p className="text-sm text-green-700 mb-3">{successMsg}</p>}
         <div className="space-y-3">
-          <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+          <input type="email" placeholder="Enter your Gmail address (e.g. yourname@gmail.com)" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
           <button onClick={handleForgotPassword} disabled={loading || !email} className="w-full bg-gold-500 text-indigo-950 font-semibold rounded px-3 py-2 disabled:opacity-50">
             {loading ? "Sending..." : "Send reset link"}
           </button>

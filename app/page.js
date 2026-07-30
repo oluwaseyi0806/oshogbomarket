@@ -107,40 +107,59 @@ export default function HomePage() {
         <Link href="/profile?register=artisan" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
-        <button
-          onClick={() => setCategoryFilter("")}
-          className={"flex flex-col items-center gap-1 min-w-[64px] relative " + (categoryFilter === "" ? "opacity-100" : "opacity-60")}
-        >
-          <div className="w-12 h-12 rounded-full bg-indigo-950 flex items-center justify-center text-xl">All</div>
-          {totalCount > 0 && (
-            <span className="absolute -top-1 right-1 bg-gold-500 text-indigo-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-              {totalCount > 99 ? "99+" : totalCount}
-            </span>
-          )}
-          <span className="text-xs text-indigo-950/70">All</span>
-        </button>
-
-        {CATEGORIES.map(function (c) {
-          const count = categoryCounts[c] || 0;
-          return (
-            <button
-              key={c}
-              onClick={() => setCategoryFilter(c)}
-              className={"flex flex-col items-center gap-1 min-w-[64px] relative " + (categoryFilter === c ? "opacity-100" : "opacity-60")}
-            >
-              <div className="w-12 h-12 rounded-full bg-white border border-indigo-950/10 flex items-center justify-center text-2xl">
-                {CATEGORY_ICONS[c]}
-              </div>
-              {count > 0 && (
-                <span className="absolute -top-1 right-1 bg-gold-500 text-indigo-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
-              <span className="text-xs text-indigo-950/70 text-center leading-tight">{c}</span>
-            </button>
-          );
-        })}
+     <div className="mb-4 overflow-hidden">
+        <div className="flex gap-3 category-marquee-track">
+          {[{ name: "All", isAll: true }].concat(CATEGORIES.map(function (c) { return { name: c, isAll: false }; })).concat([{ name: "All", isAll: true }]).concat(CATEGORIES.map(function (c) { return { name: c, isAll: false }; })).map(function (item, i) {
+            if (item.isAll) {
+              return (
+                <button
+                  key={"all-" + i}
+                  onClick={() => setCategoryFilter("")}
+                  className={"flex flex-col items-center gap-1 min-w-[64px] relative shrink-0 " + (categoryFilter === "" ? "opacity-100" : "opacity-60")}
+                >
+                  <div className="w-12 h-12 rounded-full bg-indigo-950 flex items-center justify-center text-xl text-parchment">All</div>
+                  {totalCount > 0 && (
+                    <span className="absolute -top-1 right-1 bg-gold-500 text-indigo-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {totalCount > 99 ? "99+" : totalCount}
+                    </span>
+                  )}
+                  <span className="text-xs text-indigo-950/70">All</span>
+                </button>
+              );
+            }
+            const count = categoryCounts[item.name] || 0;
+            return (
+              <button
+                key={item.name + "-" + i}
+                onClick={() => setCategoryFilter(item.name)}
+                className={"flex flex-col items-center gap-1 min-w-[64px] relative shrink-0 " + (categoryFilter === item.name ? "opacity-100" : "opacity-60")}
+              >
+                <div className="w-12 h-12 rounded-full bg-white border border-indigo-950/10 flex items-center justify-center text-2xl">
+                  {CATEGORY_ICONS[item.name]}
+                </div>
+                {count > 0 && (
+                  <span className="absolute -top-1 right-1 bg-gold-500 text-indigo-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+                <span className="text-xs text-indigo-950/70 text-center leading-tight">{item.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <style jsx>{`
+          .category-marquee-track {
+            width: max-content;
+            animation: categoryMarquee 40s linear infinite;
+          }
+          .category-marquee-track:hover {
+            animation-play-state: paused;
+          }
+          @keyframes categoryMarquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+        `}</style>
       </div>
 
       <input

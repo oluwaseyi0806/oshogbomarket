@@ -90,7 +90,7 @@ export default function EditListingPage() {
       .update({
         title: title,
         description: description,
-        price: Number(price),
+        price: Number(String(price).replace(/[^0-9.]/g, "")),
         category: category,
         location_area: area,
         condition: condition,

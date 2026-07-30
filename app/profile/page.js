@@ -239,7 +239,7 @@ function ProfileContent() {
             </p>
           </div>
         </div>
-        <button onClick={() => router.push("/settings")} className="flex items-center justify-center sm:justify-start gap-1 text-sm font-semibold text-indigo-950/70 shrink-0 self-start sm:self-auto">
+       <button onClick={() => router.push("/settings")} className="flex items-center justify-center gap-1.5 text-sm font-semibold text-indigo-950 bg-white border border-indigo-950/20 rounded-full px-4 py-2 shadow-sm hover:bg-indigo-950/5 shrink-0 self-start sm:self-auto">
           <span className="text-lg">{"\u2699"}</span> Settings
         </button>
       </div>
