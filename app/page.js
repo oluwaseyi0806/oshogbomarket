@@ -7,6 +7,7 @@ import ListingCard from "../components/ListingCard";
 import AutocompleteInput from "../components/AutocompleteInput";
 import LiveListingsMarquee from "../components/LiveListingsMarquee";
 import Link from "next/link";
+import AutoScrollRow from "../components/AutoScrollRow";
 
 export default function HomePage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [totalCount, setTotalCount] = useState(0);
   const [artisanSearchTerm, setArtisanSearchTerm] = useState("");
   const [artisanLocation, setArtisanLocation] = useState("");
+  const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
     fetchListings();
@@ -29,7 +31,16 @@ export default function HomePage() {
   useEffect(() => {
     fetchRecentlySold();
     fetchCategoryCounts();
+    fetchOnlineCount();
+    const interval = setInterval(fetchOnlineCount, 30000);
+    return function () { clearInterval(interval); };
   }, []);
+
+  async function fetchOnlineCount() {
+    const cutoff = new Date(Date.now() - 90 * 1000).toISOString();
+    const { count } = await supabase.from("users").select("id", { count: "exact", head: true }).gt("last_seen", cutoff);
+    setOnlineCount(count || 0);
+  }
 
   async function fetchListings() {
     setLoading(true);
@@ -70,7 +81,15 @@ export default function HomePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-display font-bold text-2xl text-indigo-950">What is happening in Osogbo today</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-display font-bold text-2xl text-indigo-950">What is happening in Osogbo today</h1>
+          {onlineCount > 0 && (
+            <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              {onlineCount} online now
+            </span>
+          )}
+        </div>
         <p className="text-indigo-950/60 text-sm mt-1">Browse what people are selling, or what they are looking to buy.</p>
       </div>
 
@@ -84,7 +103,7 @@ export default function HomePage() {
         </div>
         <p className="text-sm text-parchment/70 mb-3">Find trusted plumbers, electricians, tailors, and more in Osogbo - or register your own skill so people can find you.</p>
         <form onSubmit={handleArtisanSearch} className="space-y-2 mb-2">
-         <AutocompleteInput
+          <AutocompleteInput
             value={artisanSearchTerm}
             onChange={setArtisanSearchTerm}
             options={ARTISAN_SKILLS}
@@ -107,9 +126,9 @@ export default function HomePage() {
         <Link href="/profile?register=artisan" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
       </div>
 
-     <div className="mb-4 overflow-hidden">
-        <div className="flex gap-3 category-marquee-track">
-         {(function () {
+      <div className="mb-4">
+        <AutoScrollRow speed={0.4}>
+          {(function () {
             const sortedCategories = CATEGORIES.slice().sort(function (a, b) {
               return (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
             });
@@ -152,20 +171,7 @@ export default function HomePage() {
               </button>
             );
           })}
-        </div>
-        <style jsx>{`
-          .category-marquee-track {
-            width: max-content;
-            animation: categoryMarquee 40s linear infinite;
-          }
-          .category-marquee-track:hover {
-            animation-play-state: paused;
-          }
-          @keyframes categoryMarquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-          }
-        `}</style>
+        </AutoScrollRow>
       </div>
 
       <input

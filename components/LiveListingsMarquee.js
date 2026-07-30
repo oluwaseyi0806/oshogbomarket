@@ -1,17 +1,18 @@
 "use client";
 import Link from "next/link";
+import AutoScrollRow from "./AutoScrollRow";
 
 export default function LiveListingsMarquee({ listings }) {
   if (!listings || listings.length === 0) return null;
   const doubled = listings.concat(listings);
 
   return (
-    <div className="mb-6 overflow-hidden">
+    <div className="mb-6">
       <div className="flex items-center gap-2 mb-2">
         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
         <p className="text-xs font-bold uppercase tracking-wide text-indigo-950/60">Recent Posts</p>
       </div>
-      <div className="flex gap-3 marquee-track">
+      <AutoScrollRow speed={0.5}>
         {doubled.map(function (listing, i) {
           return (
             <Link key={listing.id + "-" + i} href={"/listings/" + listing.id} className="flex-shrink-0 w-28 bg-white border border-indigo-950/10 rounded-lg overflow-hidden">
@@ -28,20 +29,7 @@ export default function LiveListingsMarquee({ listings }) {
             </Link>
           );
         })}
-      </div>
-      <style jsx>{`
-        .marquee-track {
-          width: max-content;
-          animation: marquee 30s linear infinite;
-        }
-        .marquee-track:hover {
-          animation-play-state: paused;
-        }
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-      `}</style>
+      </AutoScrollRow>
     </div>
   );
 }
