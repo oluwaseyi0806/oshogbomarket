@@ -1,9 +1,9 @@
-import VideoPlayer from "../../../components/VideoPlayer";
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import { isOnline } from "../../../lib/presence";
+import VideoPlayer from "../../../components/VideoPlayer";
 
 export default function ArtisanProfilePage() {
   const { id } = useParams();

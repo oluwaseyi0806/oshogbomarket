@@ -1,10 +1,10 @@
-﻿import VideoPlayer from "../../../components/VideoPlayer";
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 import ListingCard from "../../../components/ListingCard";
+import VideoPlayer from "../../../components/VideoPlayer";
 
 export default function ListingDetailPage() {
   const { id } = useParams();
