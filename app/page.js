@@ -84,12 +84,12 @@ export default function HomePage() {
         </div>
         <p className="text-sm text-parchment/70 mb-3">Find trusted plumbers, electricians, tailors, and more in Osogbo - or register your own skill so people can find you.</p>
         <form onSubmit={handleArtisanSearch} className="space-y-2 mb-2">
-          <AutocompleteInput
+         <AutocompleteInput
             value={artisanSearchTerm}
             onChange={setArtisanSearchTerm}
             options={ARTISAN_SKILLS}
             placeholder="What service do you need? e.g. plumber"
-            className="w-full border border-white/30 bg-white text-indigo-950 placeholder-indigo-950/40 rounded px-3 py-2 text-sm"
+            className="w-full border-2 border-gold-500 rounded px-3 py-2 text-sm font-medium"
           />
           <div className="flex gap-2">
             <div className="flex-1">
@@ -98,7 +98,7 @@ export default function HomePage() {
                 onChange={setArtisanLocation}
                 options={OSOGBO_AREAS}
                 placeholder="Location in Osogbo (optional)"
-                className="w-full border border-white/30 bg-white text-indigo-950 placeholder-indigo-950/40 rounded px-3 py-2 text-sm"
+                className="w-full border-2 border-gold-500 rounded px-3 py-2 text-sm font-medium"
               />
             </div>
             <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2 text-sm shrink-0">Search</button>
@@ -109,7 +109,13 @@ export default function HomePage() {
 
      <div className="mb-4 overflow-hidden">
         <div className="flex gap-3 category-marquee-track">
-          {[{ name: "All", isAll: true }].concat(CATEGORIES.map(function (c) { return { name: c, isAll: false }; })).concat([{ name: "All", isAll: true }]).concat(CATEGORIES.map(function (c) { return { name: c, isAll: false }; })).map(function (item, i) {
+         {(function () {
+            const sortedCategories = CATEGORIES.slice().sort(function (a, b) {
+              return (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
+            });
+            const items = [{ name: "All", isAll: true }].concat(sortedCategories.map(function (c) { return { name: c, isAll: false }; }));
+            return items.concat(items);
+          })().map(function (item, i) {
             if (item.isAll) {
               return (
                 <button

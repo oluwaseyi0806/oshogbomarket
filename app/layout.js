@@ -7,6 +7,7 @@ import OneSignalInit from "../components/OneSignalInit";
 import PresenceTracker from "../components/PresenceTracker";
 import IdleLogout from "../components/IdleLogout";
 import SupportWidget from "../components/SupportWidget";
+import { Analytics } from "@vercel/analytics/react";
 
 
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
         <main className="max-w-5xl mx-auto px-4 py-6 flex-1 w-full pb-20">{children}</main>
         <Footer />
         <SupportWidget />
+        <Analytics />
         <BottomNav />
       </body>
     </html>

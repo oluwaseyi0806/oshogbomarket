@@ -32,7 +32,7 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
 
   return (
     <div className="relative">
-<input
+      <input
         type="text"
         value={value}
         onChange={handleChange}
@@ -40,13 +40,13 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
         onBlur={handleBlur}
         placeholder={placeholder}
         className={className}
-        style={{ color: "#151C33", backgroundColor: "#FFFFFF" }}
+        style={{ color: "#000000", backgroundColor: "#FFFFFF", WebkitTextFillColor: "#000000" }}
       />
       {showDropdown && filtered.length > 0 && (
         <div className="absolute z-50 top-full left-0 right-0 bg-white border border-indigo-950/20 rounded mt-1 max-h-48 overflow-y-auto shadow-lg">
           {filtered.map(function (opt) {
             return (
-              <button key={opt} type="button" onClick={() => selectOption(opt)} className="block w-full text-left px-3 py-2 text-sm hover:bg-indigo-950/5">
+              <button key={opt} type="button" onClick={() => selectOption(opt)} className="block w-full text-left px-3 py-2 text-sm hover:bg-indigo-950/5" style={{ color: "#000000" }}>
                 {opt}
               </button>
             );

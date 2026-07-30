@@ -144,6 +144,20 @@ export default function NewListingPage() {
     }
 
     const normalizedWhatsapp = normalizeWhatsapp(whatsapp);
+    let finalCategory = category;
+    try {
+      const catResponse = await fetch("/api/ai/category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title + " " + description }),
+      });
+      const catData = await catResponse.json();
+      if (catData.category && CATEGORIES.includes(catData.category)) {
+        finalCategory = catData.category;
+      }
+    } catch (err) {
+      finalCategory = category;
+    }
 
     const imageUrls = [];
     for (const file of files) {
@@ -194,7 +208,7 @@ export default function NewListingPage() {
       title,
       description,
       price: Number(String(price).replace(/[^0-9.]/g, "")),
-      category,
+      category: finalCategory,
       custom_category: category === "Other" ? customCategory : null,
       location_area: area,
       images: imageUrls,

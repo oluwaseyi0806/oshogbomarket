@@ -8,6 +8,15 @@ export default function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showBell, setShowBell] = useState(false);
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest("[data-bell-container]")) {
+        setShowBell(false);
+      }
+    }
+    document.addEventListener("click", handleClickOutside);
+    return function () { document.removeEventListener("click", handleClickOutside); };
+  }, []);
 
   useEffect(() => {
     checkUser();
@@ -53,8 +62,8 @@ export default function Navbar() {
           <span className="whitespace-nowrap">Oshogbo<span className="text-gold-500">Market</span></span>
         </Link>
         <div className="flex items-center gap-3">
-          {name && (
-            <div className="relative">
+         {name && (
+            <div className="relative" data-bell-container>
               <button onClick={() => { setShowBell(!showBell); if (!showBell) markAllRead(); }} className="relative">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
                   <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" strokeLinecap="round" strokeLinejoin="round" />
