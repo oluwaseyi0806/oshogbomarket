@@ -114,10 +114,12 @@ export default function ChatPage() {
     const recipientId = chatInfo.buyer_id === userId ? chatInfo.seller_id : chatInfo.buyer_id;
     const isJobChat = !chatInfo.listing_id;
 
+  const senderProfile = profileFor(userId);
+    const senderName = senderProfile?.name || "Someone";
     await supabase.from("notifications").insert({
       user_id: recipientId,
       type: isJobChat ? "job" : "message",
-      message: isJobChat ? "New message about a job opportunity" : "New message on OshogboMarket",
+      message: senderName + " sent you a message" + (isJobChat ? " about a job" : ""),
       link: "/chat/" + chatId,
     });
 

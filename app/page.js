@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import { OSOGBO_AREAS, CATEGORIES, CATEGORY_ICONS, ARTISAN_SKILLS } from "../lib/osogboAreas";
 import ListingCard from "../components/ListingCard";
 import AutocompleteInput from "../components/AutocompleteInput";
+import LiveListingsMarquee from "../components/LiveListingsMarquee";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -73,6 +74,8 @@ export default function HomePage() {
         <p className="text-indigo-950/60 text-sm mt-1">Browse what people are selling, or what they are looking to buy.</p>
       </div>
 
+      <LiveListingsMarquee listings={listings} />
+
       <div className="bg-indigo-950 rounded-lg p-4 mb-6 text-parchment">
         <div className="flex items-center gap-2 mb-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +89,7 @@ export default function HomePage() {
             onChange={setArtisanSearchTerm}
             options={ARTISAN_SKILLS}
             placeholder="What service do you need? e.g. plumber"
-            className="w-full border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm text-parchment"
+            className="w-full border border-white/30 bg-white text-indigo-950 placeholder-indigo-950/40 rounded px-3 py-2 text-sm"
           />
           <div className="flex gap-2">
             <div className="flex-1">
@@ -95,13 +98,13 @@ export default function HomePage() {
                 onChange={setArtisanLocation}
                 options={OSOGBO_AREAS}
                 placeholder="Location in Osogbo (optional)"
-                className="w-full border border-white/20 bg-white/10 placeholder-parchment/50 rounded px-3 py-2 text-sm text-parchment"
+                className="w-full border border-white/30 bg-white text-indigo-950 placeholder-indigo-950/40 rounded px-3 py-2 text-sm"
               />
             </div>
             <button type="submit" className="bg-gold-500 text-indigo-950 font-semibold rounded px-4 py-2 text-sm shrink-0">Search</button>
           </div>
         </form>
-        <Link href="/profile" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
+        <Link href="/profile?register=artisan" className="text-xs underline text-gold-400 uppercase font-bold tracking-wide">Register As An Artisan / Skilled Worker</Link>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 mb-4 -mx-4 px-4">

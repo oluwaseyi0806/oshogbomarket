@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import VideoPlayer from "../../../components/VideoPlayer";
+"use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -107,7 +108,7 @@ export default function ListingDetailPage() {
     <div className="max-w-2xl mx-auto">
       {listing.video_url && (
         <div className="mb-4">
-          <video controls className="w-full rounded-lg bg-black" src={listing.video_url} />
+         <VideoPlayer src={listing.video_url} className="w-full rounded-lg bg-black" />
         </div>
       )}
       {listing.images?.length ? (

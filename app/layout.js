@@ -5,7 +5,9 @@ import Footer from "../components/Footer";
 import BottomNav from "../components/BottomNav";
 import OneSignalInit from "../components/OneSignalInit";
 import PresenceTracker from "../components/PresenceTracker";
+import IdleLogout from "../components/IdleLogout";
 import SupportWidget from "../components/SupportWidget";
+
 
 
 export const metadata = {

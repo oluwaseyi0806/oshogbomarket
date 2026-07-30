@@ -1,3 +1,4 @@
+import VideoPlayer from "../../../components/VideoPlayer";
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -67,10 +68,11 @@ export default function ArtisanProfilePage() {
       text: messageText,
     });
 
+  const { data: buyerProfile } = await supabase.from("users").select("name").eq("id", userData.user.id).single();
     await supabase.from("notifications").insert({
       user_id: id,
       type: "job",
-      message: "New job opportunity: " + artisan.artisan_skill,
+      message: (buyerProfile?.name || "Someone") + " sent a job request for " + artisan.artisan_skill,
       link: "/chat/" + newChat.id,
     });
 
@@ -173,7 +175,7 @@ export default function ArtisanProfilePage() {
       {artisan.work_video_url && (
         <div className="bg-white border border-indigo-950/10 rounded-lg p-4">
           <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Video of their work</p>
-          <video controls className="w-full rounded-lg bg-black" src={artisan.work_video_url} />
+         <VideoPlayer src={artisan.work_video_url} className="w-full rounded-lg bg-black" />
         </div>
       )}
 

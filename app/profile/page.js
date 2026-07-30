@@ -1,11 +1,13 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { ARTISAN_SKILLS, OSOGBO_AREAS } from "../../lib/osogboAreas";
 import ListingCard from "../../components/ListingCard";
-import { isOnline } from "../../lib/presence";
 import AutocompleteInput from "../../components/AutocompleteInput";
+import VideoPlayer from "../../components/VideoPlayer";
+import { isOnline } from "../../lib/presence";
+import { Suspense } from "react";
 
 function hueFromId(id) {
   let hash = 0;
@@ -15,8 +17,9 @@ function hueFromId(id) {
   return Math.abs(hash) % 360;
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [myListings, setMyListings] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -55,8 +58,9 @@ export default function ProfilePage() {
     const { data: profileData } = await supabase.from("users").select("*").eq("id", userData.user.id).single();
     setProfile(profileData);
 
+    const alreadyArtisan = !!profileData?.is_artisan && !!profileData?.artisan_skill;
     setIsArtisan(!!profileData?.is_artisan);
-    setHasArtisanProfile(!!profileData?.is_artisan && !!profileData?.artisan_skill);
+    setHasArtisanProfile(alreadyArtisan);
     setArtisanSkill(profileData?.artisan_skill || "");
     setYearsExperience(profileData?.years_experience || "");
     setBio(profileData?.bio || "");
@@ -65,6 +69,11 @@ export default function ProfilePage() {
     setArtisanWhatsapp(profileData?.whatsapp_number || "");
     setWorkPhotos(profileData?.work_photos || []);
     setWorkVideoUrl(profileData?.work_video_url || null);
+
+    if (searchParams.get("register") === "artisan" && !alreadyArtisan) {
+      setIsArtisan(true);
+      setEditingArtisan(true);
+    }
 
     const { data: ratingsData } = await supabase.from("ratings").select("stars").eq("rated_user_id", userData.user.id);
     if (ratingsData && ratingsData.length > 0) {
@@ -167,11 +176,26 @@ export default function ProfilePage() {
   }
 
   async function removeArtisanProfile() {
-    if (!confirm("Remove your artisan profile? People will no longer find you in artisan search.")) return;
-    await supabase.from("users").update({ is_artisan: false }).eq("id", userId);
+    if (!confirm("Completely delete your artisan profile? All your artisan details, work photos, and video will be permanently removed. You can register fresh afterwards.")) return;
+    await supabase.from("users").update({
+      is_artisan: false,
+      artisan_skill: null,
+      years_experience: null,
+      service_area: null,
+      bio: null,
+      work_photos: [],
+      work_video_url: null,
+    }).eq("id", userId);
+
     setIsArtisan(false);
     setHasArtisanProfile(false);
     setEditingArtisan(false);
+    setArtisanSkill("");
+    setYearsExperience("");
+    setBio("");
+    setArtisanArea("");
+    setWorkPhotos([]);
+    setWorkVideoUrl(null);
   }
 
   async function markSold(id) {
@@ -191,8 +215,8 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="relative w-20 h-20 rounded-full bg-indigo-950/10 overflow-hidden shrink-0">
             {profile?.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -207,15 +231,15 @@ export default function ProfilePage() {
               <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
             </label>
           </div>
-          <div>
-            <h1 className="font-display font-bold text-xl text-indigo-950">{profile?.name}</h1>
-            <p className="text-sm text-indigo-950/50">{profile?.email}</p>
+          <div className="min-w-0">
+            <h1 className="font-display font-bold text-xl text-indigo-950 truncate">{profile?.name}</h1>
+            <p className="text-sm text-indigo-950/50 truncate">{profile?.email}</p>
             <p className="text-xs text-indigo-950/40">
               Member since {new Date(profile?.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
             </p>
           </div>
         </div>
-      <button onClick={() => router.push("/settings")} className="flex items-center gap-1 text-sm font-semibold text-indigo-950/70 shrink-0">
+        <button onClick={() => router.push("/settings")} className="flex items-center justify-center sm:justify-start gap-1 text-sm font-semibold text-indigo-950/70 shrink-0 self-start sm:self-auto">
           <span className="text-lg">{"\u2699"}</span> Settings
         </button>
       </div>
@@ -283,13 +307,13 @@ export default function ProfilePage() {
           {workVideoUrl && (
             <div className="bg-white border border-indigo-950/10 rounded-lg p-4 mt-3">
               <p className="text-xs font-semibold text-indigo-950/50 uppercase tracking-wide mb-2">Video of your work</p>
-              <video controls className="w-full rounded-lg bg-black" src={workVideoUrl} />
+              <VideoPlayer src={workVideoUrl} className="w-full rounded-lg bg-black" />
             </div>
           )}
 
           <div className="flex gap-2 mt-3">
             <button onClick={() => setEditingArtisan(true)} className="flex-1 bg-indigo-950 text-parchment font-semibold rounded px-3 py-2 text-sm">Edit artisan details</button>
-            <button onClick={removeArtisanProfile} className="bg-red-600 text-white font-semibold rounded px-3 py-2 text-sm">Remove</button>
+            <button onClick={removeArtisanProfile} className="bg-red-600 text-white font-semibold rounded px-3 py-2 text-sm">Delete profile</button>
           </div>
         </div>
       )}
@@ -320,7 +344,7 @@ export default function ProfilePage() {
             {ARTISAN_SKILLS.map(function (s) { return (<option key={s} value={s}>{s}</option>); })}
           </select>
 
-       <AutocompleteInput
+          <AutocompleteInput
             value={artisanArea}
             onChange={setArtisanArea}
             options={OSOGBO_AREAS}
@@ -351,7 +375,7 @@ export default function ProfilePage() {
 
           <div>
             <label className="block text-xs font-semibold text-indigo-950/60 mb-1">Video of your work (optional, max 50MB)</label>
-            {workVideoUrl && <video controls className="w-full rounded mb-2 bg-black" src={workVideoUrl} />}
+            {workVideoUrl && <VideoPlayer src={workVideoUrl} className="w-full rounded mb-2 bg-black" />}
             <input type="file" accept="video/*" onChange={handleWorkVideoChange} className="w-full text-sm" />
             {newWorkVideoFile && <p className="text-xs text-indigo-950/50 mt-1">{newWorkVideoFile.name} selected</p>}
           </div>
@@ -376,7 +400,7 @@ export default function ProfilePage() {
             return (
               <div key={listing.id}>
                 <ListingCard listing={listing} />
-       <div className="flex gap-2 mt-1 text-xs">
+                <div className="flex gap-2 mt-1 text-xs">
                   <a href={"/listings/" + listing.id + "/edit"} className="underline text-indigo-900">Edit</a>
                   {listing.status === "active" && (
                     <button onClick={() => markSold(listing.id)} className="underline text-indigo-950/70">Mark sold</button>
@@ -400,5 +424,13 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-indigo-950/50">Loading...</p>}>
+      <ProfileContent />
+    </Suspense>
   );
 }
