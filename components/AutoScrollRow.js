@@ -3,19 +3,22 @@ import { useEffect, useRef } from "react";
 
 export default function AutoScrollRow({ children, speed }) {
   const containerRef = useRef(null);
-  const pausedRef = useRef(false);
+  const isUserScrollingRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
+  const lastAutoLeftRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
     let frameId;
     function step() {
-      if (!pausedRef.current && container) {
-        container.scrollLeft += speed || 0.5;
-        if (container.scrollLeft >= container.scrollWidth / 2) {
-          container.scrollLeft = 0;
-        }
+      if (container && !isUserScrollingRef.current) {
+        const maxScroll = container.scrollWidth / 2;
+        let next = container.scrollLeft + (speed || 0.5);
+        if (maxScroll > 0 && next >= maxScroll) next = 0;
+        container.scrollLeft = next;
+        lastAutoLeftRef.current = container.scrollLeft;
       }
       frameId = requestAnimationFrame(step);
     }
@@ -23,24 +26,22 @@ export default function AutoScrollRow({ children, speed }) {
     return function () { cancelAnimationFrame(frameId); };
   }, [speed]);
 
-  function pause() {
-    pausedRef.current = true;
-    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
-  }
-  function scheduleResume() {
-    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
-    resumeTimeoutRef.current = setTimeout(function () { pausedRef.current = false; }, 2500);
+  function handleScroll() {
+    const container = containerRef.current;
+    if (!container) return;
+    if (Math.abs(container.scrollLeft - lastAutoLeftRef.current) > 2) {
+      isUserScrollingRef.current = true;
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+      resumeTimeoutRef.current = setTimeout(function () {
+        isUserScrollingRef.current = false;
+      }, 2000);
+    }
   }
 
   return (
     <div
       ref={containerRef}
-      onPointerDown={pause}
-      onPointerUp={scheduleResume}
-      onTouchStart={pause}
-      onTouchEnd={scheduleResume}
-      onMouseEnter={pause}
-      onMouseLeave={scheduleResume}
+      onScroll={handleScroll}
       className="flex gap-3 overflow-x-auto no-scrollbar"
     >
       {children}
