@@ -23,25 +23,18 @@ export default function HomePage() {
   const [artisanSearchTerm, setArtisanSearchTerm] = useState("");
   const [artisanLocation, setArtisanLocation] = useState("");
   const [onlineCount, setOnlineCount] = useState(0);
-  const [recentListings, setRecentListings] = useState([]);
 
   useEffect(() => {
     fetchListings();
   }, [areaFilter, categoryFilter, typeFilter, searchTerm]);
 
-useEffect(() => {
+  useEffect(() => {
     fetchRecentlySold();
     fetchCategoryCounts();
     fetchOnlineCount();
-    fetchRecentListings();
     const interval = setInterval(fetchOnlineCount, 30000);
     return function () { clearInterval(interval); };
   }, []);
-
-  async function fetchRecentListings() {
-    const { data } = await supabase.from("listings").select("*").eq("status", "active").order("created_at", { ascending: false }).limit(15);
-    setRecentListings(data || []);
-  }
 
   async function fetchOnlineCount() {
     const cutoff = new Date(Date.now() - 90 * 1000).toISOString();
@@ -100,7 +93,7 @@ useEffect(() => {
         <p className="text-indigo-950/60 text-sm mt-1">Browse what people are selling, or what they are looking to buy.</p>
       </div>
 
-     <LiveListingsMarquee listings={recentListings} />
+      <LiveListingsMarquee />
 
       <div className="bg-indigo-950 rounded-lg p-4 mb-6 text-parchment">
         <div className="flex items-center gap-2 mb-2">

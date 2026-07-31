@@ -22,6 +22,19 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="font-body min-h-screen flex flex-col">
         <Script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" strategy="afterInteractive" />
+        <Script
+          id="microsoft-clarity"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "PASTE_YOUR_CLARITY_ID_HERE");
+            `,
+          }}
+        />
         <OneSignalInit />
         <Navbar />
         <main className="max-w-5xl mx-auto px-4 py-6 flex-1 w-full pb-20">{children}</main>
