@@ -1,11 +1,10 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function AutoScrollRow({ children, speed }) {
   const containerRef = useRef(null);
-  const isUserScrollingRef = useRef(false);
+  const [paused, setPaused] = useState(false);
   const resumeTimeoutRef = useRef(null);
-  const lastAutoLeftRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -13,35 +12,49 @@ export default function AutoScrollRow({ children, speed }) {
 
     let frameId;
     function step() {
-      if (container && !isUserScrollingRef.current) {
+      if (container && !paused) {
         const maxScroll = container.scrollWidth / 2;
-        let next = container.scrollLeft + (speed || 0.5);
-        if (maxScroll > 0 && next >= maxScroll) next = 0;
-        container.scrollLeft = next;
-        lastAutoLeftRef.current = container.scrollLeft;
+        if (maxScroll > 0) {
+          let next = container.scrollLeft + (speed || 0.5);
+          if (next >= maxScroll) next = 0;
+          container.scrollLeft = next;
+        }
       }
       frameId = requestAnimationFrame(step);
     }
     frameId = requestAnimationFrame(step);
     return function () { cancelAnimationFrame(frameId); };
-  }, [speed]);
+  }, [paused, speed]);
 
-  function handleScroll() {
-    const container = containerRef.current;
-    if (!container) return;
-    if (Math.abs(container.scrollLeft - lastAutoLeftRef.current) > 2) {
-      isUserScrollingRef.current = true;
-      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
-      resumeTimeoutRef.current = setTimeout(function () {
-        isUserScrollingRef.current = false;
-      }, 2000);
-    }
+  function pauseNow() {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    setPaused(true);
   }
+
+  function scheduleResume() {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(function () {
+      setPaused(false);
+    }, 2000);
+  }
+
+  useEffect(() => {
+    window.addEventListener("mouseup", scheduleResume);
+    window.addEventListener("touchend", scheduleResume);
+    window.addEventListener("touchcancel", scheduleResume);
+    return function () {
+      window.removeEventListener("mouseup", scheduleResume);
+      window.removeEventListener("touchend", scheduleResume);
+      window.removeEventListener("touchcancel", scheduleResume);
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <div
       ref={containerRef}
-      onScroll={handleScroll}
+      onMouseDown={pauseNow}
+      onTouchStart={pauseNow}
       className="flex gap-3 overflow-x-auto no-scrollbar"
     >
       {children}
