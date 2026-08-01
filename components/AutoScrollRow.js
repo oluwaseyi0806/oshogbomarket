@@ -1,40 +1,36 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AutoScrollRow({ children, speed }) {
   const containerRef = useRef(null);
-  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    let frameId;
-    function step() {
-      if (container && !paused) {
-        const maxScroll = container.scrollWidth / 2;
-        if (maxScroll > 0) {
-          let next = container.scrollLeft + (speed || 0.5);
-          if (next >= maxScroll) next = 0;
-          container.scrollLeft = next;
-        }
-      }
-      frameId = requestAnimationFrame(step);
-    }
-    frameId = requestAnimationFrame(step);
-    return function () { cancelAnimationFrame(frameId); };
-  }, [paused, speed]);
+    const intervalId = setInterval(function () {
+      if (pausedRef.current) return;
+      const maxScroll = container.scrollWidth / 2;
+      if (maxScroll <= 0) return;
+      let next = container.scrollLeft + (speed || 0.5);
+      if (next >= maxScroll) next = 0;
+      container.scrollLeft = next;
+    }, 16);
+
+    return function () { clearInterval(intervalId); };
+  }, [speed]);
 
   function pauseNow() {
+    pausedRef.current = true;
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
-    setPaused(true);
   }
 
   function scheduleResume() {
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
     resumeTimeoutRef.current = setTimeout(function () {
-      setPaused(false);
+      pausedRef.current = false;
     }, 2000);
   }
 
