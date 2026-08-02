@@ -1,13 +1,14 @@
 ﻿"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { checkAndGrantReferralReward } from "../../lib/referrals";
 
-export default function AuthPage() {
+function AuthContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
@@ -15,6 +16,15 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      setReferralCode(ref);
+      setMode("signup");
+    }
+  }, [searchParams]);
 
   async function handleSignUp() {
     setLoading(true);
@@ -37,9 +47,20 @@ export default function AuthPage() {
       setErrorMsg(error.message);
       return;
     }
+
+    let referredById = null;
+    if (referralCode) {
+      const { data: referrer } = await supabase.from("users").select("id").eq("referral_code", referralCode).maybeSingle();
+      referredById = referrer?.id || null;
+    }
+
     if (data.user) {
-     const fullName = (firstName.trim() + " " + lastName.trim()).trim() || "Osogbo user";
-      await supabase.from("users").upsert({ id: data.user.id, name: fullName, first_name: firstName.trim(), last_name: lastName.trim(), email: email });
+      await supabase.from("users").upsert({
+        id: data.user.id,
+        name: name || "Osogbo user",
+        email: email,
+        referred_by: referredById,
+      });
     }
     setLoading(false);
     router.push("/");
@@ -138,16 +159,17 @@ export default function AuthPage() {
         {mode === "signup" ? "Create your account" : "Log in"}
       </h1>
 
+      {referralCode && mode === "signup" && (
+        <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 mb-3">You were invited by a friend on OshogboMarket!</p>
+      )}
+
       {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
 
       <div className="space-y-3">
-      {mode === "signup" && (
-          <div className="flex gap-2">
-            <input type="text" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-1/2 border border-indigo-950/20 rounded px-3 py-2" />
-            <input type="text" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-1/2 border border-indigo-950/20 rounded px-3 py-2" />
-          </div>
+        {mode === "signup" && (
+          <input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         )}
-        <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
+        <input type="email" placeholder="Enter your Gmail address (e.g. yourname@gmail.com)" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <input type="password" placeholder="Password (minimum 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border border-indigo-950/20 rounded px-3 py-2" />
         <button
           onClick={mode === "signup" ? handleSignUp : handleLogin}
@@ -163,5 +185,13 @@ export default function AuthPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-indigo-950/50">Loading...</p>}>
+      <AuthContent />
+    </Suspense>
   );
 }

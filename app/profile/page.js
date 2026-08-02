@@ -8,6 +8,7 @@ import AutocompleteInput from "../../components/AutocompleteInput";
 import VideoPlayer from "../../components/VideoPlayer";
 import { isOnline } from "../../lib/presence";
 import { Suspense } from "react";
+import { checkAndGrantReferralReward } from "../../lib/referrals";
 
 function hueFromId(id) {
   let hash = 0;
@@ -169,8 +170,14 @@ function ProfileContent() {
     setNewWorkPhotoFiles([]);
     setNewWorkVideoFile(null);
     setSavingArtisan(false);
-    setHasArtisanProfile(true);
+   setHasArtisanProfile(true);
     setEditingArtisan(false);
+
+    const { data: myProfile } = await supabase.from("users").select("referred_by").eq("id", userId).single();
+    if (myProfile?.referred_by) {
+      await checkAndGrantReferralReward(myProfile.referred_by);
+    }
+
     load();
     alert("Artisan profile saved.");
   }
