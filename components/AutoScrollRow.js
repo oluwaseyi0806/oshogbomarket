@@ -5,6 +5,7 @@ export default function AutoScrollRow({ children, speed }) {
   const containerRef = useRef(null);
   const pausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
+  const positionRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -14,10 +15,14 @@ export default function AutoScrollRow({ children, speed }) {
       if (pausedRef.current) return;
       const maxScroll = container.scrollWidth / 2;
       if (maxScroll <= 0) return;
-      let next = container.scrollLeft + (speed || 0.5);
-      if (next >= maxScroll) next = 0;
-      container.scrollLeft = next;
-    }, 16);
+
+      positionRef.current += (speed || 0.5);
+      if (positionRef.current >= maxScroll) {
+        positionRef.current = 0;
+      }
+
+      container.scrollTo({ left: positionRef.current, behavior: "auto" });
+    }, 30);
 
     return function () { clearInterval(intervalId); };
   }, [speed]);
@@ -27,7 +32,14 @@ export default function AutoScrollRow({ children, speed }) {
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
   }
 
+  function syncPosition() {
+    if (containerRef.current) {
+      positionRef.current = containerRef.current.scrollLeft;
+    }
+  }
+
   function scheduleResume() {
+    syncPosition();
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
     resumeTimeoutRef.current = setTimeout(function () {
       pausedRef.current = false;
@@ -52,6 +64,7 @@ export default function AutoScrollRow({ children, speed }) {
       onMouseDown={pauseNow}
       onTouchStart={pauseNow}
       className="flex gap-3 overflow-x-auto no-scrollbar"
+      style={{ WebkitOverflowScrolling: "touch" }}
     >
       {children}
     </div>
