@@ -4,15 +4,28 @@ import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
 import AutoScrollRow from "./AutoScrollRow";
 
+function buildDisplayList(items, minCount) {
+  if (!items || items.length === 0) return [];
+  const result = [];
+  let i = 0;
+  while (result.length < minCount) {
+    result.push(items[i % items.length]);
+    i++;
+  }
+  return result;
+}
+
 export default function LiveListingsMarquee() {
   const [listings, setListings] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState("loading");
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     load();
   }, []);
 
   async function load() {
+    setStatus("loading");
     const { data, error } = await supabase
       .from("listings")
       .select("id, title, price, images")
@@ -21,11 +34,17 @@ export default function LiveListingsMarquee() {
       .limit(15);
 
     if (error) {
-      console.error("LiveListingsMarquee fetch error:", error);
+      setErrorMsg(error.message);
+      setStatus("error");
+      return;
     }
+
     setListings(data || []);
-    setLoaded(true);
+    setStatus(data && data.length > 0 ? "ready" : "empty");
   }
+
+  const baseList = buildDisplayList(listings, 12);
+  const displayList = baseList.concat(baseList);
 
   return (
     <div className="mb-6">
@@ -34,13 +53,13 @@ export default function LiveListingsMarquee() {
         <p className="text-xs font-bold uppercase tracking-wide text-indigo-950/60">Recent Posts</p>
       </div>
 
-      {!loaded ? (
-        <p className="text-xs text-indigo-950/40">Loading...</p>
-      ) : listings.length === 0 ? (
-        <p className="text-xs text-indigo-950/40">No recent posts to show yet.</p>
-      ) : (
+      {status === "loading" && <p className="text-xs text-indigo-950/40">Loading...</p>}
+      {status === "error" && <p className="text-xs text-red-600">Could not load: {errorMsg}</p>}
+      {status === "empty" && <p className="text-xs text-indigo-950/40">No recent posts to show yet.</p>}
+
+      {status === "ready" && (
         <AutoScrollRow speed={0.5}>
-          {listings.concat(listings).map(function (listing, i) {
+          {displayList.map(function (listing, i) {
             return (
               <Link key={listing.id + "-" + i} href={"/listings/" + listing.id} className="flex-shrink-0 w-28 bg-white border border-indigo-950/10 rounded-lg overflow-hidden">
                 <div className="w-28 h-28 bg-indigo-950/5">
