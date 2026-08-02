@@ -34,11 +34,9 @@ export default function SettingsPage() {
     await supabase.auth.signOut();
     router.push("/");
   }
+
   const rows = [
     { label: "Invite and earn", href: "/referrals" },
-    { label: "Personal details", href: "/settings/personal" },
-  ];
-  const rows = [
     { label: "Personal details", href: "/settings/personal" },
     { label: "Change phone number", href: "/settings/account" },
     { label: "Change email", href: "/settings/account" },
